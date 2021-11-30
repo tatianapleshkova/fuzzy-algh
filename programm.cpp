@@ -6,8 +6,25 @@
 #include <cstdlib>
 #include <ctime>
 #include <chrono>
+#include <cmath>
 using namespace std;
 
+
+//Евклидово расстояние двух точек 
+double EuclideanDistance(double* x, double* y, int columnNumber)
+{
+    double diff = 0;
+    double d = 0;
+
+    for (int i = 0; i < columnNumber; i++)
+    {
+        diff = 0;
+        diff = pow((x[i] - y[i]), 2);
+        d = d + diff;
+    }
+
+    return sqrt(d);
+}
 
 //задание не целого случайного числа из промежутка
 double xrand(double min, double max)
@@ -136,26 +153,11 @@ void create_rule(int num_term, int columnNumber, double** x, int* rule, int* ran
             sum_interval += vero_fit[j];
         }
     }
-    //с определенной вероятностью n-5/n заменяем на don't care 
-    //на вероятность поменять
+    //с вероятностью > 0.85 заменяем на don't care 
     for (int j = 0; j < columnNumber; j++)
     {
-        double change = 0;
-        if (columnNumber == 5)
-        {
-            change = 0.4;
-        }
-        else 
-        {
-            change = double(columnNumber - 5)/double(columnNumber);
-        }
-
-        if (change < 0)
-        {
-            change = change * -1.0;
-        }
-        double crand = xrand(1, 0);
-        if (crand >= 0 && crand <= change)
+        double change = xrand(1, 0);
+        if (change > 0.85)
         {
             rule[j] = 0;
         }
