@@ -9,6 +9,16 @@
 #include <cmath>
 using namespace std;
 
+//Факториал 
+long double fact(int N)
+{
+    if (N < 0) 
+        return 0; 
+    if (N == 0) 
+        return 1; 
+    else 
+        return N * fact(N - 1);
+}
 
 //Евклидово расстояние двух точек 
 double EuclideanDistance(double* x, double* y, int columnNumber)
@@ -323,8 +333,10 @@ int main () {
     int w2 = 1;
     //int w3 = 1;
     int npop = 4;
-    //количество рандомных объектов, по которым подбирать правило
-    int num_random = 2;
+    //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
+    int num_random = 4;
+    //количество объектов, на основании которых создается правило
+    int num_obj_create_rule = 2;
     int kfold = 10;
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
@@ -680,6 +692,11 @@ int main () {
                 
             int flag = 0;
             int* random_object = new int[num_random];
+            int* obj_for_rule = new int[num_obj_create_rule];
+            for (int j = 0; j < num_obj_create_rule; j++)
+            {
+                obj_for_rule[j] = -1;
+            }
             //заполнение правил
             for (int q = 0; q < q_number; q++)
             {
@@ -692,28 +709,85 @@ int main () {
                 int random_obj = rand() % train_length;
                 //массив с num_random случайными объектами из выборки одного класса
                 random_object[0] = rand() % train_length;
+                int count = 1;
                 for (int ran = 0; ran < num_random; ran++)
                 {
-                    //одинаковые объекты
                     random_obj = rand() % train_length;
                     while (train_class_answers[random_obj] != train_class_answers[random_object[0]])
                     {
                         random_obj = rand() % train_length;
                     }
-                    random_object[ran + 1] = random_obj;
+                    int check_same = 0;
+                    for (int j = 0; j < count; j++)
+                    {
+                        if (random_obj == random_object[j])
+                        {
+                            check_same = 1;
+                        }
+                    }
+                    if (check_same == 0)
+                    {
+                        random_object[ran + 1] = random_obj;
+                    }
+                    else 
+                    {
+                        random_obj = rand() % train_length;
+                        while ((train_class_answers[random_obj] != train_class_answers[random_object[0]]))
+                        {
+                            random_obj = rand() % train_length;
+                        }
+                        random_object[ran + 1] = random_obj;
+                    }
                 }
 
-                create_rule(num_term, columnNumber, train_data, in_rule, random_object, num_random);
+                /*for (int j = 0; j < num_random; j++)
+                {
+                    cout << random_object[j] << " ";
+                }*/
 
+                int ed_fact = 0;
+                //сочетание без повторений
+                ed_fact = fact(num_random)/(fact(num_obj_create_rule)*fact(num_random-num_obj_create_rule));
+                double* edist = new double[ed_fact];
+                //обработка массива с выбранными данными из одного класса
+                int count = 0;
+                int edist_min = 100;
+                int num1 = -1;
+                int num2 = -1;
+                for (int ran = 0; ran < num_random; ran++)
+                {
+                    for (int ran2 = 0; ran2 < num_random - 1; ran2++)
+                    {
+                        if (ran != ran2 && ran < ran2)
+                        {
+                            edist[count] = EuclideanDistance(train_data[random_object[ran]], train_data[random_object[ran2]], columnNumber);
+                            count++;
+                            //пока затычка на запоминание 2-х чисел
+                            if (edist[count] < edist_min)
+                            {
+                                edist_min = edist[count];
+                                num1 = ran;
+                                num2 = ran2;
+                            }
+                        }
+                    }
+                } 
+
+                obj_for_rule[0] = num1;
+                obj_for_rule[1] = num2;
+
+                create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
+
+                /*
                 for (int j = 0; j < columnNumber; j++)
                 {
                     cout << in_rule[j] << " ";
-                }
+                }*/
 
                 delete[] in_rule;
             }
             
-            delete[] random_object;
+            delete[] random_object;//остановка/вопрос
         }
 
 
@@ -754,7 +828,7 @@ int main () {
         delete fitness_michegan;
         delete correct_classification_num;
 
-        delete[] class_values_count_train;
+        delete[] class_values_count_train;//остановка/вопрос
         delete[] fitness;
         delete[] fitness_small;
 
