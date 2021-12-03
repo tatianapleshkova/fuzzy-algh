@@ -489,6 +489,7 @@ int main () {
     double average_accuracy_kfold = 0;//accuracy правила*/
     cross_num = cross_num_const;
     int train_length = lineNumber-(cross_num_const+last_data);
+    int test_length = cross_num_const+last_data; 
     double** test_data = new double*[cross_num_const+last_data];
     for (int i = 0; i < cross_num_const+last_data; i++)
     {
@@ -754,6 +755,8 @@ int main () {
                 obj_for_rule[j] = -1;
             }
             //заполнение правил
+            //ВОПРОООООС
+            //а если провести оценку важности критериев, и не делать эти критерии don't care?
             for (int q = 0; q < q_number; q++)
             {
                 int* in_rule = new int[columnNumber];
@@ -888,10 +891,105 @@ int main () {
                 delete[] edist;
             }
             
-            delete[] random_object;//остановка/вопрос
+            //проверка на количество правил
+            //если меньше минимального, то дозаполнить
+            if (flag < num_class)
+            {
+                //сделать по-умному
+                cout << endl << " МЕНЬШЕ МИНИМАЛЬНОГО " << endl;
+            }
+
+            /*for (int j = 0; j < number_rules; j++)
+            {
+                for (int y = 0; y < columnNumber; y++)
+                {
+                    cout << pop[ipop][j][y] << " ";
+                }
+                cout << endl;
+            }*/
+
+            delete[] random_object;//остановка
             delete[] obj_for_rule;
         }
+        
+        //Старт 
+        for (int generation = 0; generation < gen; generation++)
+        {
+            //cout << "Generation " << generation << endl;
+            double** reply_train = new double*[pop_size];
+            for (int j = 0; j < pop_size; j++)
+            {
+                reply_train[j] = new double[train_length];
+            }
 
+            double** reply_test = new double*[pop_size];
+            for (int j = 0; j < pop_size; j++)
+            {
+                reply_test[j] = new double[test_length];
+            }
+
+            for (int j = 0; j < pop_size; j++)
+            {
+                for (int l = 0; l < train_length; l++)
+                {
+                    reply_train[j][l] = 0;
+                }
+                for (int l = 0; l < test_length; l++)
+                {
+                    reply_test[j][l] = 0;
+                }
+            }
+
+            //отправить на проверку обучающую выборку
+
+
+
+
+            //посчитать количество правильно классиф объектов для каждого правила
+
+
+
+
+
+            //ввести матрицу ошибок для задач с N классами
+
+
+
+
+            //реализовать NSGA-II
+
+
+
+
+
+
+            //селекция 
+                //Пропорциональная
+                //Ранговая
+                //Турнирная
+                //Новая с кол-вом верно классиф.объектов
+            //скрещивание
+                //одноточечное
+                //двухточечное
+                //равномерное
+            //мутация
+                //слабая
+                //средняя
+                //сильная
+//-------------------------------------------удаление массивов для generation----------------------------------------------------
+
+            for (int y = 0; y < pop_size; y++)
+            {
+                delete reply_test[y];
+            }
+            delete reply_test;
+            
+            for (int y = 0; y < pop_size; y++)
+            {
+                delete reply_train[y];
+            }
+            delete reply_train;
+        }
 
 //-------------------------------------------удаление массивов для kfold----------------------------------------------------
         for (int ip = 0; ip < pop_size; ip++)
@@ -930,7 +1028,7 @@ int main () {
         delete fitness_michegan;
         delete correct_classification_num;
 
-        delete[] class_values_count_train;//остановка/вопрос
+        delete[] class_values_count_train;//остановка
         delete[] fitness;
         delete[] fitness_small;
 
