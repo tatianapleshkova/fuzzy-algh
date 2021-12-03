@@ -181,6 +181,62 @@ void create_rule(int num_term, int columnNumber, double** x, int* rule, int* ran
     delete[] vero_fit;
 }
 
+//Подаем правило, выводим мю для такого-то класса
+double check_conf_rule(double* x, int* rule_gen, int col)
+{
+    double max = 0;
+    double min = 1;
+    for (int b = 0; b < col; b++)
+    {
+        double temp = 0;
+        if (rule_gen[b] == 0)
+        {
+            temp = 1;
+        }
+        else
+        {
+            temp = term_universal(x[b], rule_gen[b]);
+        }
+
+        if (temp < min)
+        {
+            min = temp;
+        }
+    }
+    //Процедура argmax
+    if (min > max)
+    {
+        max = min;
+    }
+    
+    return max;
+}
+
+//confidence measure of the fuzzy association rule
+void confidence(int num_class, int lineNumber, int columnNumber, double* class_answers, double** data, int* rule, double* confid)
+{
+    //расчитываем конфиденс
+    double* m = new double[num_class];
+    double sum_m = 0;
+    for (int j = 0; j < lineNumber; j++)
+    {
+        for (int l = 0; l < num_class; l++)
+        {
+            if (class_answers[j] == l)
+            {
+                m[l] += check_conf_rule(data[j], rule, columnNumber);
+            }
+        }
+        sum_m += check_conf_rule(data[j], rule, columnNumber);
+    }
+
+    for (int j = 0; j < num_class; j++)
+    {
+        confid[j] = m[j] / sum_m;
+    }
+    delete[] m;
+}
+
 int main () {
     srand(time(0));//в самом начале один раз для рандома
     chrono::steady_clock sc;   // создание объекта `steady_clock` class
@@ -454,7 +510,7 @@ int main () {
         //1 - pop2
         //2 - pop3
         int num_term = 14;    
-        /*double*** confid_rules = new double** [npop];
+        double*** confid_rules = new double** [npop];
         double*** weight_rules = new double** [npop];
         int*** active_rules = new int** [npop];
         int*** class_rules = new int** [npop];
@@ -486,7 +542,7 @@ int main () {
                     active_rules[ip][j][l] = 0;
                 }
             }
-        }*/
+        }
 
         int*** pop = new int** [pop_size];
         int*** pop2 = new int** [pop_size];
@@ -709,6 +765,7 @@ int main () {
                 int random_obj = rand() % train_length;
                 //массив с num_random случайными объектами из выборки одного класса
                 random_object[0] = rand() % train_length;
+                int answer_class_check = train_class_answers[random_object[0]];
                 int count = 1;
                 for (int ran = 0; ran < num_random; ran++)
                 {
@@ -728,6 +785,7 @@ int main () {
                     if (check_same == 0)
                     {
                         random_object[ran + 1] = random_obj;
+                        count++;
                     }
                     else 
                     {
@@ -735,6 +793,7 @@ int main () {
                         while ((train_class_answers[random_obj] != train_class_answers[random_object[0]]))
                         {
                             random_obj = rand() % train_length;
+                            count++;
                         }
                         random_object[ran + 1] = random_obj;
                     }
@@ -750,7 +809,7 @@ int main () {
                 ed_fact = fact(num_random)/(fact(num_obj_create_rule)*fact(num_random-num_obj_create_rule));
                 double* edist = new double[ed_fact];
                 //обработка массива с выбранными данными из одного класса
-                int count = 0;
+                int dcount = 0;
                 int edist_min = 100;
                 int num1 = -1;
                 int num2 = -1;
@@ -760,34 +819,77 @@ int main () {
                     {
                         if (ran != ran2 && ran < ran2)
                         {
-                            edist[count] = EuclideanDistance(train_data[random_object[ran]], train_data[random_object[ran2]], columnNumber);
-                            count++;
+                            edist[dcount] = EuclideanDistance(train_data[random_object[ran]], train_data[random_object[ran2]], columnNumber);
+                            dcount++;
                             //пока затычка на запоминание 2-х чисел
-                            if (edist[count] < edist_min)
+                            if (edist[dcount] < edist_min)
                             {
-                                edist_min = edist[count];
+                                edist_min = edist[dcount];
                                 num1 = ran;
                                 num2 = ran2;
                             }
                         }
                     }
                 } 
-
+                //затычка на 2 объекта
                 obj_for_rule[0] = num1;
                 obj_for_rule[1] = num2;
 
+                //найти ближкий объект другого класса и попробовать не брать его термы
+                //а должны ли все термы быть не такими же, как из другого класса?..
                 create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                /*
+                //теперь нужно понять насколько хорошо правило, если норм - то оставляем
+                double* in_confid = new double[num_class];
+                for (int j = 0; j < num_class; j++)
+                {
+                    in_confid[j] = 0;
+                }
+                
+                confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                
+                /*cout << endl << " Следующее " << endl;
+                for (int j = 0; j < num_class; j++)
+                {
+                    cout << in_confid[j] << " ";
+                }*/
+
+                /*cout << endl << " Правило " << endl;
                 for (int j = 0; j < columnNumber; j++)
                 {
                     cout << in_rule[j] << " ";
                 }*/
 
+                double max_confid = 0;
+                int c_confid = 0;
+                for (int j = 0; j < num_class; j++)
+                {
+                    if (in_confid[j] > max_confid)
+                    {
+                        max_confid = in_confid[j];
+                        c_confid = j;
+                    }
+                }
+
+                if (answer_class_check == c_confid && max_confid > 0.75)//можно ли побольше
+                {
+                    flag++;
+                    for (int y = 0; y < columnNumber; y++)
+                    {
+                        pop[ipop][q][y] = in_rule[y];
+                    }
+                    class_rules[0][ipop][q] = c_confid;
+                    confid_rules[0][ipop][q] = max_confid;
+                    weight_rules[0][ipop][q] = 2*max_confid - 1;
+                    active_rules[0][ipop][q] = 1;
+                }
+
                 delete[] in_rule;
+                delete[] edist;
             }
             
             delete[] random_object;//остановка/вопрос
+            delete[] obj_for_rule;
         }
 
 
@@ -831,6 +933,31 @@ int main () {
         delete[] class_values_count_train;//остановка/вопрос
         delete[] fitness;
         delete[] fitness_small;
+
+        for (int ip = 0; ip < npop; ip++)
+        {
+            for (int j = 0; j < pop_size; j++)
+            {
+                delete[] confid_rules[ip][j];
+                delete[] weight_rules[ip][j];
+                delete[] active_rules[ip][j];
+                delete[] class_rules[ip][j];
+                delete[] rules_update[ip][j];
+            }
+        }
+        for (int ip = 0; ip < npop; ip++)
+        {
+            delete[] confid_rules[ip];
+            delete[] weight_rules[ip];
+            delete[] active_rules[ip];
+            delete[] class_rules[ip];
+            delete[] rules_update[ip];
+        }
+        delete[] confid_rules;
+        delete[] weight_rules;
+        delete[] active_rules;
+        delete[] class_rules;
+        delete[] rules_update;
 
     }
     
