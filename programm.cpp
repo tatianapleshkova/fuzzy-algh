@@ -9,6 +9,14 @@
 #include <cmath>
 using namespace std;
 
+//от наибольшего к наименьшему
+void swap_rows(double** a, int r1, int r2)
+{
+    double* b = a[r1];
+    a[r1] = a[r2];
+    a[r2] = b;
+}
+
 //Факториал 
 long double fact(int N)
 {
@@ -17,7 +25,8 @@ long double fact(int N)
     if (N == 0) 
         return 1; 
     else 
-        return N * fact(N - 1);
+    
+    return N * fact(N - 1);
 }
 
 //Евклидово расстояние двух точек 
@@ -29,7 +38,7 @@ double EuclideanDistance(double* x, double* y, int columnNumber)
     for (int i = 0; i < columnNumber; i++)
     {
         diff = 0;
-        diff = pow((x[i] - y[i]), 2);
+        diff = (x[i] - y[i])*(x[i] - y[i]);
         d = d + diff;
     }
 
@@ -690,6 +699,8 @@ int main () {
         //подсчет количества каждого класса в train выборке!!!
         int* class_values_count_train = new int[num_class - 1];
 
+        //задача подбора информативных признаков 
+
         //подсчет количества повторяющихся значений для каждого класса в train set
         for(int class_id = 0; class_id < num_class; class_id++)
         {
@@ -755,8 +766,6 @@ int main () {
                 obj_for_rule[j] = -1;
             }
             //заполнение правил
-            //ВОПРОООООС
-            //а если провести оценку важности критериев, и не делать эти критерии don't care?
             for (int q = 0; q < q_number; q++)
             {
                 int* in_rule = new int[columnNumber];
@@ -808,9 +817,21 @@ int main () {
                 }*/
 
                 int ed_fact = 0;
-                //сочетание без повторений
-                ed_fact = fact(num_random)/(fact(num_obj_create_rule)*fact(num_random-num_obj_create_rule));
-                double* edist = new double[ed_fact];
+                ed_fact = num_random - 1;
+                double** edist = new double*[ed_fact];
+                for (int e = 0; e < ed_fact; e++)
+                {
+                    edist[e] = new double[2];
+                }
+
+                for (int j = 0; j < ed_fact; j++)
+                {
+                    for (int j1 = 0; j1 < 2; j1++)
+                    {
+                        edist[j][j1] = 0;
+                    }
+                }
+
                 //обработка массива с выбранными данными из одного класса
                 int dcount = 0;
                 int edist_min = 100;
@@ -818,29 +839,59 @@ int main () {
                 int num2 = -1;
                 for (int ran = 0; ran < num_random; ran++)
                 {
-                    for (int ran2 = 0; ran2 < num_random - 1; ran2++)
+                    if (train_data[random_object[ran]] != train_data[random_object[0]])
                     {
-                        if (ran != ran2 && ran < ran2)
-                        {
-                            edist[dcount] = EuclideanDistance(train_data[random_object[ran]], train_data[random_object[ran2]], columnNumber);
-                            dcount++;
-                            //пока затычка на запоминание 2-х чисел
-                            if (edist[dcount] < edist_min)
-                            {
-                                edist_min = edist[dcount];
-                                num1 = ran;
-                                num2 = ran2;
-                            }
-                        }
+                        edist[dcount][0] = EuclideanDistance(train_data[random_object[0]], train_data[random_object[ran]], columnNumber);
+                        edist[dcount][1] = random_object[ran];
+                        dcount++;
                     }
                 } 
+
+                /*cout << endl << " Еdist before" << endl;
+                for (int j = 0; j < 2; j++)
+                {
+                    for (int j1 = 0; j1 < ed_fact; j1++)
+                    {
+                        cout << edist[j1][j] << " ";
+                    }
+                    cout << endl;
+                }*/
+
+                for(int r = 0; r < ed_fact-1; r++)
+                {
+                    // Поиск наибольшего в первом столбце
+                    double m = edist[r][0];
+                    int idx = r;
+                    for(int i = r; i < ed_fact; i++)
+                    {
+                        if (edist[i][0] < m) 
+                        {
+                            m = edist[i][0];
+                            idx = i;
+                            // Обмен
+                            swap_rows(edist, r, idx);
+                        }
+                    }                    
+                }
+
+                /*cout << endl << " Еdist after" << endl;
+                for (int j = 0; j < 2; j++)
+                {
+                    for (int j1 = 0; j1 < ed_fact; j1++)
+                    {
+                        cout << edist[j1][j] << " ";
+                    }
+                    cout << endl;
+                }*/
+
+
                 //затычка на 2 объекта
                 obj_for_rule[0] = num1;
                 obj_for_rule[1] = num2;
 
                 //найти ближкий объект другого класса и попробовать не брать его термы
                 //а должны ли все термы быть не такими же, как из другого класса?..
-                create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
+                //create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
                 //теперь нужно понять насколько хорошо правило, если норм - то оставляем
                 double* in_confid = new double[num_class];
@@ -849,7 +900,7 @@ int main () {
                     in_confid[j] = 0;
                 }
                 
-                confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                //confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
                 
                 /*cout << endl << " Следующее " << endl;
                 for (int j = 0; j < num_class; j++)
@@ -874,8 +925,8 @@ int main () {
                     }
                 }
 
-                if (answer_class_check == c_confid && max_confid > 0.75)//можно ли побольше
-                {
+                if (answer_class_check == c_confid && max_confid > 0.75)//сделать его параметром и лучше 0.5
+                { //проверить вот это работу, подумать
                     flag++;
                     for (int y = 0; y < columnNumber; y++)
                     {
@@ -964,14 +1015,12 @@ int main () {
 
 
             //селекция 
-                //Пропорциональная
-                //Ранговая
-                //Турнирная
-                //Новая с кол-вом верно классиф.объектов
+                //Пропорциональная-
+                //Ранговая нелинейные ранги
+                //Турнирная с N размером турнира
             //скрещивание
-                //одноточечное
-                //двухточечное
                 //равномерное
+                //Новая с кол-вом верно классиф.объектов
             //мутация
                 //слабая
                 //средняя
