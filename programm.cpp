@@ -9,7 +9,7 @@
 #include <cmath>
 using namespace std;
 
-//от наибольшего к наименьшему
+//от наименьшего к наибольшему
 void swap_rows(double** a, int r1, int r2)
 {
     double* b = a[r1];
@@ -406,6 +406,12 @@ int main () {
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
     int cross_num_const = cross_num;
+    int better_than = 0.5;
+    int which_initial = 0;
+    //0 - формирование правила с одного случайного объекта
+    //1 - с n случайных объектов
+    //2 - с n случайных объектов с минимальным евклидовым расстоянием
+
 //-----------------------------------------------нормировка------------------------------------------------------
     double** data = new double*[lineNumber];
     for (int i = 0; i < lineNumber; i++)
@@ -746,221 +752,483 @@ int main () {
 //-------------------------------------------начало га-лгоритма----------------------------------------------------
         //инициализация
         int q_number = 0;
-        for (int ipop = 0; ipop < pop_size; ipop++)
+        if (which_initial == 0)
         {
-            //задание изначального количества для популяции
-            if (columnNumber <= number_rules/2)
+            for (int ipop = 0; ipop < pop_size; ipop++)
             {
-                q_number = columnNumber;
-            }
-            else
-            {
-                q_number = number_rules/2;
-            }
-                
-            int flag = 0;
-            int* random_object = new int[num_random];
-            int* obj_for_rule = new int[num_obj_create_rule];
-            for (int j = 0; j < num_obj_create_rule; j++)
-            {
-                obj_for_rule[j] = -1;
-            }
-            //заполнение правил
-            for (int q = 0; q < q_number; q++)
-            {
-                int* in_rule = new int[columnNumber];
-                for (int j = 0; j < columnNumber; j++)
+                //cout << i << " ";
+                //cout << endl;
+                if (columnNumber <= number_rules/2)
                 {
-                    in_rule[j] = 0;
+                    q_number = columnNumber;
                 }
-                //случайный объект из выборки
-                int random_obj = rand() % train_length;
-                //массив с num_random случайными объектами из выборки одного класса
-                random_object[0] = rand() % train_length;
-                int answer_class_check = train_class_answers[random_object[0]];
-                int count = 1;
-                for (int ran = 0; ran < num_random; ran++)
+                else
                 {
-                    random_obj = rand() % train_length;
-                    while (train_class_answers[random_obj] != train_class_answers[random_object[0]])
-                    {
-                        random_obj = rand() % train_length;
-                    }
-                    int check_same = 0;
-                    for (int j = 0; j < count; j++)
-                    {
-                        if (random_obj == random_object[j])
-                        {
-                            check_same = 1;
-                        }
-                    }
-                    if (check_same == 0)
-                    {
-                        random_object[ran + 1] = random_obj;
-                        count++;
-                    }
-                    else 
-                    {
-                        random_obj = rand() % train_length;
-                        while ((train_class_answers[random_obj] != train_class_answers[random_object[0]]))
-                        {
-                            random_obj = rand() % train_length;
-                            count++;
-                        }
-                        random_object[ran + 1] = random_obj;
-                    }
-                }
-
-                /*for (int j = 0; j < num_random; j++)
-                {
-                    cout << random_object[j] << " ";
-                }*/
-
-                int ed_fact = 0;
-                ed_fact = num_random - 1;
-                double** edist = new double*[ed_fact];
-                for (int e = 0; e < ed_fact; e++)
-                {
-                    edist[e] = new double[2];
-                }
-
-                for (int j = 0; j < ed_fact; j++)
-                {
-                    for (int j1 = 0; j1 < 2; j1++)
-                    {
-                        edist[j][j1] = 0;
-                    }
-                }
-
-                //обработка массива с выбранными данными из одного класса
-                int dcount = 0;
-                int edist_min = 100;
-                int num1 = -1;
-                int num2 = -1;
-                for (int ran = 0; ran < num_random; ran++)
-                {
-                    if (train_data[random_object[ran]] != train_data[random_object[0]])
-                    {
-                        edist[dcount][0] = EuclideanDistance(train_data[random_object[0]], train_data[random_object[ran]], columnNumber);
-                        edist[dcount][1] = random_object[ran];
-                        dcount++;
-                    }
-                } 
-
-                /*cout << endl << " Еdist before" << endl;
-                for (int j = 0; j < 2; j++)
-                {
-                    for (int j1 = 0; j1 < ed_fact; j1++)
-                    {
-                        cout << edist[j1][j] << " ";
-                    }
-                    cout << endl;
-                }*/
-
-                for(int r = 0; r < ed_fact-1; r++)
-                {
-                    // Поиск наибольшего в первом столбце
-                    double m = edist[r][0];
-                    int idx = r;
-                    for(int i = r; i < ed_fact; i++)
-                    {
-                        if (edist[i][0] < m) 
-                        {
-                            m = edist[i][0];
-                            idx = i;
-                            // Обмен
-                            swap_rows(edist, r, idx);
-                        }
-                    }                    
-                }
-
-                /*cout << endl << " Еdist after" << endl;
-                for (int j = 0; j < 2; j++)
-                {
-                    for (int j1 = 0; j1 < ed_fact; j1++)
-                    {
-                        cout << edist[j1][j] << " ";
-                    }
-                    cout << endl;
-                }*/
-
-
-                //затычка на 2 объекта
-                obj_for_rule[0] = num1;
-                obj_for_rule[1] = num2;
-
-                //найти ближкий объект другого класса и попробовать не брать его термы
-                //а должны ли все термы быть не такими же, как из другого класса?..
-                //create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
-
-                //теперь нужно понять насколько хорошо правило, если норм - то оставляем
-                double* in_confid = new double[num_class];
-                for (int j = 0; j < num_class; j++)
-                {
-                    in_confid[j] = 0;
+                    q_number = number_rules/2;
                 }
                 
-                //confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
-                
-                /*cout << endl << " Следующее " << endl;
-                for (int j = 0; j < num_class; j++)
+                int flag = 0;
+                for (int q = 0; q < q_number; q++)
                 {
-                    cout << in_confid[j] << " ";
-                }*/
-
-                /*cout << endl << " Правило " << endl;
-                for (int j = 0; j < columnNumber; j++)
-                {
-                    cout << in_rule[j] << " ";
-                }*/
-
-                double max_confid = 0;
-                int c_confid = 0;
-                for (int j = 0; j < num_class; j++)
-                {
-                    if (in_confid[j] > max_confid)
+                    int* in_rule = new int[columnNumber];
+                    for (int j = 0; j < columnNumber; j++)
                     {
-                        max_confid = in_confid[j];
-                        c_confid = j;
+                        in_rule[j] = 0;
                     }
-                }
+                    //случайный объект из выборки
+                    int random_obj = rand() % train_length;
+                    int* obj_for_rule = new int[1];
+                    num_obj_create_rule = 1;
+                    obj_for_rule[0] = random_obj;
+                    create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                if (answer_class_check == c_confid && max_confid > 0.75)//сделать его параметром и лучше 0.5
-                { //проверить вот это работу, подумать
-                    flag++;
+                    /*for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << rule[j] << " ";
+                    }*/
+
+                    double* in_confid = new double[num_class];
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        in_confid[j] = 0;
+                    }
+                    
+                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    /*
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        cout << in_confid[j] << " ";
+                    }*/
+
+                    cout << endl << " Правило " << endl;
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << in_rule[j] << " ";
+                    }
+
+                    double max_confid = 0;
+                    int c_confid = 0;
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        if (in_confid[j] > max_confid)
+                        {
+                            max_confid = in_confid[j];
+                            c_confid = j;
+                        }
+                    }
+
+                    if (max_confid > better_than)
+                    {
+                        flag++;
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = in_rule[y];
+                        }
+                        class_rules[0][ipop][q] = c_confid;
+                        confid_rules[0][ipop][q] = max_confid;
+                        weight_rules[0][ipop][q] = 2*max_confid - 1;
+                        active_rules[0][ipop][q] = 1;
+                    }
+                    else
+                    {
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = 100;
+                        }
+                        active_rules[0][ipop][q] = 0;
+                    }
+
+                    delete[] in_rule;
+                    delete[] in_confid;
+                    delete[] obj_for_rule;
+                }
+                if (flag < num_class)
+                {
+                    //сделать по-умному
+                    cout << endl << " МЕНЬШЕ МИНИМАЛЬНОГО " << endl;
+                }
+                
+                /*for (int j = 0; j < number_rules; j++)
+                {
                     for (int y = 0; y < columnNumber; y++)
                     {
-                        pop[ipop][q][y] = in_rule[y];
+                        cout << pop[i][j][y] << " ";
                     }
-                    class_rules[0][ipop][q] = c_confid;
-                    confid_rules[0][ipop][q] = max_confid;
-                    weight_rules[0][ipop][q] = 2*max_confid - 1;
-                    active_rules[0][ipop][q] = 1;
-                }
-
-                delete[] in_rule;
-                delete[] edist;
-            }
-            
-            //проверка на количество правил
-            //если меньше минимального, то дозаполнить
-            if (flag < num_class)
-            {
-                //сделать по-умному
-                cout << endl << " МЕНЬШЕ МИНИМАЛЬНОГО " << endl;
-            }
-
-            /*for (int j = 0; j < number_rules; j++)
-            {
-                for (int y = 0; y < columnNumber; y++)
+                    cout << endl;
+                }*/
+                
+                /*for (int y = 0; y < number_rules; y++)
                 {
-                    cout << pop[ipop][j][y] << " ";
+                    cout << class_rules[0][i][y] << " ";
+                    if (active_rules[0][i][y] == 0)
+                    {
+                        cout << "<-wrong ";
+                    }
+                }*/
+                /*for (int y = 0; y < number_rules; y++)
+                {
+                    cout << "active " << active_rules[0][i][y] << endl;
+                    cout << "confidence " << confid_rules[0][i][y] << endl;
+                    cout << "weight " << weight_rules[0][i][y] << endl;
                 }
-                cout << endl;
-            }*/
+                cout << endl;*/
+            }
+        }
+        else if (which_initial == 1)
+        {
+            for (int ipop = 0; ipop < pop_size; ipop++)
+            {
+                //cout << i << " ";
+                //cout << endl;
+                if (columnNumber <= number_rules/2)
+                {
+                    q_number = columnNumber;
+                }
+                else
+                {
+                    q_number = number_rules/2;
+                }
+                
+                int flag = 0;
+                for (int q = 0; q < q_number; q++)
+                {
+                    int* in_rule = new int[columnNumber];
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        in_rule[j] = 0;
+                    }
+                    //случайный объект из выборки
+                    int* obj_for_rule = new int[num_obj_create_rule];
+                    for (int j = 0; j < num_obj_create_rule; j++)
+                    {
+                        obj_for_rule[j] = rand() % train_length;
+                    }
+                    create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-            delete[] random_object;//остановка
-            delete[] obj_for_rule;
+                    /*for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << rule[j] << " ";
+                    }*/
+
+                    double* in_confid = new double[num_class];
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        in_confid[j] = 0;
+                    }
+                    
+                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    /*
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        cout << in_confid[j] << " ";
+                    }*/
+
+                    cout << endl << " Правило " << endl;
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << in_rule[j] << " ";
+                    }
+
+                    double max_confid = 0;
+                    int c_confid = 0;
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        if (in_confid[j] > max_confid)
+                        {
+                            max_confid = in_confid[j];
+                            c_confid = j;
+                        }
+                    }
+
+                    if (max_confid > better_than)
+                    {
+                        flag++;
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = in_rule[y];
+                        }
+                        class_rules[0][ipop][q] = c_confid;
+                        confid_rules[0][ipop][q] = max_confid;
+                        weight_rules[0][ipop][q] = 2*max_confid - 1;
+                        active_rules[0][ipop][q] = 1;
+                    }
+                    else
+                    {
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = 100;
+                        }
+                        active_rules[0][ipop][q] = 0;
+                    }
+
+                    delete[] in_rule;
+                    delete[] in_confid;
+                    delete[] obj_for_rule;
+                }
+                if (flag < num_class)
+                {
+                    //сделать по-умному
+                    cout << endl << " МЕНЬШЕ МИНИМАЛЬНОГО " << endl;
+                }
+                
+                /*for (int j = 0; j < number_rules; j++)
+                {
+                    for (int y = 0; y < columnNumber; y++)
+                    {
+                        cout << pop[i][j][y] << " ";
+                    }
+                    cout << endl;
+                }*/
+                
+                /*for (int y = 0; y < number_rules; y++)
+                {
+                    cout << class_rules[0][i][y] << " ";
+                    if (active_rules[0][i][y] == 0)
+                    {
+                        cout << "<-wrong ";
+                    }
+                }*/
+                /*for (int y = 0; y < number_rules; y++)
+                {
+                    cout << "active " << active_rules[0][i][y] << endl;
+                    cout << "confidence " << confid_rules[0][i][y] << endl;
+                    cout << "weight " << weight_rules[0][i][y] << endl;
+                }
+                cout << endl;*/
+            }
+        }
+        else 
+        {
+            for (int ipop = 0; ipop < pop_size; ipop++)
+            {
+                //задание изначального количества для популяции
+                if (columnNumber <= number_rules/2)
+                {
+                    q_number = columnNumber;
+                }
+                else
+                {
+                    q_number = number_rules/2;
+                }
+                    
+                int flag = 0;
+                int* random_object = new int[num_random];
+                int* obj_for_rule = new int[num_obj_create_rule];
+                for (int j = 0; j < num_obj_create_rule; j++)
+                {
+                    obj_for_rule[j] = -1;
+                }
+                //заполнение правил
+                for (int q = 0; q < q_number; q++)
+                {
+                    int* in_rule = new int[columnNumber];
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        in_rule[j] = 0;
+                    }
+                    //случайный объект из выборки
+                    int random_obj = rand() % train_length;
+                    //массив с num_random случайными объектами из выборки одного класса
+                    random_object[0] = rand() % train_length;
+                    int answer_class_check = train_class_answers[random_object[0]];
+                    int count = 1;
+                    for (int ran = 0; ran < num_random; ran++)
+                    {
+                        random_obj = rand() % train_length;
+                        while (train_class_answers[random_obj] != train_class_answers[random_object[0]])
+                        {
+                            random_obj = rand() % train_length;
+                        }
+                        int check_same = 0;
+                        for (int j = 0; j < count; j++)
+                        {
+                            if (random_obj == random_object[j])
+                            {
+                                check_same = 1;
+                            }
+                        }
+                        if (check_same == 0)
+                        {
+                            random_object[ran + 1] = random_obj;
+                            count++;
+                        }
+                        else 
+                        {
+                            random_obj = rand() % train_length;
+                            while ((train_class_answers[random_obj] != train_class_answers[random_object[0]]))
+                            {
+                                random_obj = rand() % train_length;
+                                count++;
+                            }
+                            random_object[ran + 1] = random_obj;
+                        }
+                    }
+
+                    /*for (int j = 0; j < num_random; j++)
+                    {
+                        cout << random_object[j] << " ";
+                    }*/
+
+                    int ed_fact = 0;
+                    ed_fact = num_random - 1;
+                    double** edist = new double*[ed_fact];
+                    for (int e = 0; e < ed_fact; e++)
+                    {
+                        edist[e] = new double[2];
+                    }
+
+                    for (int j = 0; j < ed_fact; j++)
+                    {
+                        for (int j1 = 0; j1 < 2; j1++)
+                        {
+                            edist[j][j1] = 0;
+                        }
+                    }
+
+                    //обработка массива с выбранными данными из одного класса
+                    int dcount = 0;
+                    int edist_min = 100;
+                    for (int ran = 0; ran < num_random; ran++)
+                    {
+                        if (train_data[random_object[ran]] != train_data[random_object[0]])
+                        {
+                            edist[dcount][0] = EuclideanDistance(train_data[random_object[0]], train_data[random_object[ran]], columnNumber);
+                            edist[dcount][1] = random_object[ran];
+                            dcount++;
+                        }
+                    } 
+
+                    /*cout << endl << " Еdist before" << endl;
+                    for (int j = 0; j < 2; j++)
+                    {
+                        for (int j1 = 0; j1 < ed_fact; j1++)
+                        {
+                            cout << edist[j1][j] << " ";
+                        }
+                        cout << endl;
+                    }*/
+
+                    for(int r = 0; r < ed_fact-1; r++)
+                    {
+                        // Поиск наименьшего в первом столбце
+                        double m = edist[r][0];
+                        int idx = r;
+                        for(int i = r; i < ed_fact; i++)
+                        {
+                            if (edist[i][0] < m) 
+                            {
+                                m = edist[i][0];
+                                idx = i;
+                                // Обмен
+                                swap_rows(edist, r, idx);
+                            }
+                        }                    
+                    }
+
+                    /*cout << endl << " Еdist after" << endl;
+                    for (int j = 0; j < 2; j++)
+                    {
+                        for (int j1 = 0; j1 < ed_fact; j1++)
+                        {
+                            cout << edist[j1][j] << " ";
+                        }
+                        cout << endl;
+                    }*/
+
+                    obj_for_rule[0] = random_object[0];
+                    int count_for_inserting = 0;
+                    for (int j = 1; j < num_obj_create_rule; j++)
+                    {
+                        obj_for_rule[j] = edist[count_for_inserting][1];
+                        count_for_inserting++;
+                    }
+
+                    //найти ближкий объект другого класса и попробовать не брать его термы
+                    //а должны ли все термы быть не такими же, как из другого класса?..
+                    create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
+
+                    //теперь нужно понять насколько хорошо правило, если норм - то оставляем
+                    double* in_confid = new double[num_class];
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        in_confid[j] = 0;
+                    }
+                    
+                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    
+                    /*cout << endl << " Следующее " << endl;
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        cout << in_confid[j] << " ";
+                    }*/
+
+                    cout << endl << " Правило " << endl;
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << in_rule[j] << " ";
+                    }
+
+                    double max_confid = 0;
+                    int c_confid = 0;
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        if (in_confid[j] > max_confid)
+                        {
+                            max_confid = in_confid[j];
+                            c_confid = j;
+                        }
+                    }
+
+                    if (answer_class_check == c_confid && max_confid > better_than)
+                    { //проверить вот это работу, подумать
+                        flag++;
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = in_rule[y];
+                        }
+                        class_rules[0][ipop][q] = c_confid;
+                        confid_rules[0][ipop][q] = max_confid;
+                        weight_rules[0][ipop][q] = 2*max_confid - 1;
+                        active_rules[0][ipop][q] = 1;
+                    }
+                    else
+                    {
+                        for (int y = 0; y < columnNumber; y++)
+                        {
+                            pop[ipop][q][y] = 100;
+                        }
+                        active_rules[0][ipop][q] = 0;
+                    }
+
+                    delete[] in_rule;
+
+                    for (int j = 0; j < ed_fact; j++)
+                    {
+                        delete edist[j];
+                    }
+                    delete edist;
+                }
+                
+                //проверка на количество правил
+                //если меньше минимального, то дозаполнить
+                if (flag < num_class)
+                {
+                    //сделать по-умному
+                    cout << endl << " МЕНЬШЕ МИНИМАЛЬНОГО " << endl;
+                }
+
+                /*for (int j = 0; j < number_rules; j++)
+                {
+                    for (int y = 0; y < columnNumber; y++)
+                    {
+                        cout << pop[ipop][j][y] << " ";
+                    }
+                    cout << endl;
+                }*/
+
+                delete[] random_object;//остановка
+                delete[] obj_for_rule;
+            }
         }
         
         //Старт 
