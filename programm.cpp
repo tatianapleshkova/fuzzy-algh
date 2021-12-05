@@ -9,7 +9,7 @@
 #include <cmath>
 using namespace std;
 
-//от наименьшего к наибольшему
+//сортировка строк
 void swap_rows(double** a, int r1, int r2)
 {
     double* b = a[r1];
@@ -246,6 +246,62 @@ void confidence(int num_class, int lineNumber, int columnNumber, double* class_a
     delete[] m;
 }
 
+//База правил подаем координаты, возвращает номер класс
+void Rules(double* x, int** rules_gen, int* class_rule, int* active_rule, int col, int num_rules, int** best_rule_for_object, double** reply, int y, int j)
+{
+    double max = 0;
+    int number_rule_best = 0;
+    int checki = 0;
+    for (int p = 0; p < num_rules; p++)
+    {
+        if (active_rule[p] == 1)//если правило активно, то считаем
+        {
+            double min = 1;
+            for (int b = 0; b < col; b++)
+            {
+                double temp = 0;
+                if (rules_gen[p][b] == 0)
+                {
+                    temp = 1;
+                }
+                else
+                {
+                    temp = term_universal(x[b], rules_gen[p][b]);
+                }
+
+                if (temp < min)
+                {
+                    min = temp;
+                }
+            }
+            //Процедура argmax
+            if (min > max)
+            {
+                max = min;
+                number_rule_best = p;
+            }
+        }
+    }
+    best_rule_for_object[y][j] = number_rule_best;
+    checki = class_rule[number_rule_best];
+    reply[y][j] = class_rule[number_rule_best];
+}
+
+//Количество верно классифицированных объектов одним правилом
+void check_fitness_michegan(int* correct_classification_for_object_train, int* best_rule_for_object_train, int y, int num_rules, int linenumber, int** fitness_michegan)
+{
+    for (int i = 0; i < linenumber; i++)
+    {
+        for (int j = 0; j < num_rules; j++)
+        {
+            if ((best_rule_for_object_train[i] == j) && (correct_classification_for_object_train[i] == 1))
+            {
+                fitness_michegan[y][j] = fitness_michegan[y][j] + 1;
+            }
+        }
+    }
+}
+
 int main () {
     srand(time(0));//в самом начале один раз для рандома
     chrono::steady_clock sc;   // создание объекта `steady_clock` class
@@ -406,7 +462,7 @@ int main () {
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
     int cross_num_const = cross_num;
-    int better_than = 0.5;
+    int better_than = 0.5;//параметр для прохождения confidence
     int which_initial = 0;
     //0 - формирование правила с одного случайного объекта
     //1 - с n случайных объектов
