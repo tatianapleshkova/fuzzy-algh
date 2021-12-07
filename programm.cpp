@@ -302,6 +302,42 @@ void check_fitness_michegan(int* correct_classification_for_object_train, int* b
     }
 }
 
+//подсчет количества активных правил в популяции
+int active_rule_flag(int* active_rules, int number_rules)
+{
+    int flag = 0;
+    for (int l = 0; l < number_rules; l++)
+    {
+        if (active_rules[l] == 1)
+        {
+            flag++;
+        }
+    }
+    return flag;
+}
+
+//don't care среднее в популяции по правиле
+int dont_care_flag(int number_rules, int columnNumber, int** x)
+{
+    int flag = 0;
+    int average = 0;
+    for (int i = 0; i < number_rules; i++)
+    {
+        flag = 0;
+        for (int l = 0; l < columnNumber; l++)
+        {
+            if (x[i][l] != 0)
+            {
+                flag++;
+            }
+        }
+        average = average +  flag / columnNumber;
+    }
+    average = average / number_rules;
+    return average;
+}
+
+
 int main () {
     srand(time(0));//в самом начале один раз для рандома
     chrono::steady_clock sc;   // создание объекта `steady_clock` class
@@ -452,7 +488,7 @@ int main () {
     int T = 4;
     int w1 = 100;
     int w2 = 1;
-    //int w3 = 1;
+    int w3 = 1;
     int npop = 4;
     //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
     int num_random = 4;
@@ -1314,9 +1350,60 @@ int main () {
                     reply_test[j][l] = 0;
                 }
             }
-
+            
+            
+            double error_percentage_train = 0;
             //отправить на проверку обучающую выборку
+            for (int y = 0; y < pop_size; y++)
+            {
+                for (int j = 0; j < train_length; j++)
+                {
+                    Rules(train_data[j], pop[y], class_rules[0][y], active_rules[0][y], columnNumber, number_rules, best_rule_for_object_train, reply_train, y, j);//отправка обучающей выборки
+                }
 
+                int train_error = 0;
+                for (int l = 0; l < train_length; l++)
+                {
+                    if (reply_train[y][l] != train_class_answers[l])
+                    {
+                        train_error = train_error + 1;//неправильно классифицированный объекты
+                        correct_classification_for_object_train[y][l] = 0;//неправильно классифицированный объект
+                    }
+                    else
+                    {
+                        correct_classification_for_object_train[y][l] = 1;//правильно классифицированный объект
+                    }
+                }
+                
+                check_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), correct_classification_num); 
+                
+                for (int j = 0; j < number_rules; j++)
+                {
+                    if (correct_classification_num[y][j] == 0)
+                    {
+                        active_rules[0][y][j] = 0;
+                    }
+                }
+
+                int flag_active = 0;
+
+                flag_active = active_rule_flag(active_rules[0][y], number_rules);
+
+                int flag_not_dontcare = 0;
+
+                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop[y]);
+                
+                //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
+
+                error_percentage_train = double(train_error) / double(train_length);
+                //f3 количество не донт care параметров в правиле суммарно по всем правилам 
+                fitness_small[y] = error_percentage_train;
+                fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
+                //cout << "Train percentage " << error_percentage_train << endl;
+                
+
+
+            }
 
 
 
