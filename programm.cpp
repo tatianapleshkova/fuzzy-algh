@@ -1323,6 +1323,9 @@ int main () {
             }
         }
         
+        
+        double best_fitness = lineNumber;
+        double best_percentage = lineNumber;
         //Старт 
         for (int generation = 0; generation < gen; generation++)
         {
@@ -1353,6 +1356,7 @@ int main () {
             
             
             double error_percentage_train = 0;
+            int best_index = -1;
             //отправить на проверку обучающую выборку
             for (int y = 0; y < pop_size; y++)
             {
@@ -1374,7 +1378,7 @@ int main () {
                         correct_classification_for_object_train[y][l] = 1;//правильно классифицированный объект
                     }
                 }
-                
+                //количество правильно классиф. объектов для каждого правила
                 check_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), correct_classification_num); 
                 
                 for (int j = 0; j < number_rules; j++)
@@ -1386,11 +1390,9 @@ int main () {
                 }
 
                 int flag_active = 0;
-
                 flag_active = active_rule_flag(active_rules[0][y], number_rules);
 
                 int flag_not_dontcare = 0;
-
                 flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop[y]);
                 
                 //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
@@ -1401,17 +1403,13 @@ int main () {
                 fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
                 //cout << "Train percentage " << error_percentage_train << endl;
                 
-
-
+                if (fitness[y] < best_fitness)
+                {
+                    best_fitness = fitness[y];
+                    best_percentage = error_percentage_train;
+                    best_index = y;
+                }
             }
-
-
-
-            //посчитать количество правильно классиф объектов для каждого правила
-
-
-
-
 
             //ввести матрицу ошибок для задач с N классами
 
