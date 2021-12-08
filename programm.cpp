@@ -338,8 +338,54 @@ int dont_care_flag(int number_rules, int columnNumber, int** x)
 }
 
 //матрица ошибок для n классов
-double error_matrix(int train_length, int* reply_train)
+double error_matrix(int train_length, double* reply_train, double* train_class_answers, double* class_value, int num_class, int* class_values_count_train)
 {
+    //подсчет количества каждого класса в массиве 
+    int* class_values_count_reply = new int[num_class - 1]; 
+
+    //подсчет количества повторяющихся значений для каждого класса в массиве
+    for(int class_id = 0; class_id < num_class; class_id++)
+    {
+        int n = 0;
+        for(int j = 0; j < train_length; j++)
+        {		
+            if(reply_train[j]==class_value[class_id]) 
+            {
+                n++;
+            }	
+        }
+        class_values_count_reply[class_id] = n;	      
+    } 
+    
+    double* mtrue = new double[num_class];
+    double** mfalse = new double* [num_class]; 
+    for (int i = 0; i < num_class; i++)
+    {
+        mfalse[i] = new double[num_class];
+    }
+
+    for(int class_id = 0; class_id < num_class; class_id++)
+    {
+        for (int i = 0; i < train_length; i++)
+        {
+            if (reply_train[i] == train_class_answers[i])
+            {
+                mtrue[class_id] =+ 1;
+            }
+            else
+            {
+                mfalse[int(train_class_answers[i])][int(reply_train[i])] =+ 1;
+            }
+        }
+    }
+    
+    for (int i = 0; i < num_class; i++)
+    {
+        delete mfalse[i];
+    }
+    delete mfalse;
+    delete[] mtrue;
+    delete[] class_values_count_reply;
     return 0;
 }
 
@@ -1324,7 +1370,7 @@ int main () {
                     cout << endl;
                 }*/
 
-                delete[] random_object;//остановка
+                delete[] random_object;
                 delete[] obj_for_rule;
             }
         }
@@ -1416,6 +1462,7 @@ int main () {
                     best_index = y;
                 }
 
+                error_matrix(train_length, reply_train[y], train_class_answers, class_value, num_class, class_values_count_train);
 
             }
 
