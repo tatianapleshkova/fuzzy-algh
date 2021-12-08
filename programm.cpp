@@ -337,6 +337,11 @@ int dont_care_flag(int number_rules, int columnNumber, int** x)
     return average;
 }
 
+//матрица ошибок для n классов
+double error_matrix(int train_length, int* reply_train)
+{
+    return 0;
+}
 
 int main () {
     srand(time(0));//в самом начале один раз для рандома
@@ -499,7 +504,7 @@ int main () {
     int last_data = lineNumber % kfold;
     int cross_num_const = cross_num;
     int better_than = 0.5;//параметр для прохождения confidence
-    int which_initial = 0;
+    int which_initial = 2;
     //0 - формирование правила с одного случайного объекта
     //1 - с n случайных объектов
     //2 - с n случайных объектов с минимальным евклидовым расстоянием
@@ -1124,7 +1129,7 @@ int main () {
                     random_object[0] = rand() % train_length;
                     int answer_class_check = train_class_answers[random_object[0]];
                     int count = 1;
-                    for (int ran = 0; ran < num_random; ran++)
+                    for (int ran = 1; ran < num_random; ran++)
                     {
                         random_obj = rand() % train_length;
                         while (train_class_answers[random_obj] != train_class_answers[random_object[0]])
@@ -1141,7 +1146,7 @@ int main () {
                         }
                         if (check_same == 0)
                         {
-                            random_object[ran + 1] = random_obj;
+                            random_object[ran] = random_obj;
                             count++;
                         }
                         else 
@@ -1152,7 +1157,7 @@ int main () {
                                 random_obj = rand() % train_length;
                                 count++;
                             }
-                            random_object[ran + 1] = random_obj;
+                            random_object[ran] = random_obj;
                         }
                     }
 
@@ -1254,11 +1259,12 @@ int main () {
                         cout << in_confid[j] << " ";
                     }*/
 
+                    /*
                     cout << endl << " Правило " << endl;
                     for (int j = 0; j < columnNumber; j++)
                     {
                         cout << in_rule[j] << " ";
-                    }
+                    }*/
 
                     double max_confid = 0;
                     int c_confid = 0;
@@ -1395,13 +1401,13 @@ int main () {
                 int flag_not_dontcare = 0;
                 flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop[y]);
                 
-                //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
+                cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
 
                 error_percentage_train = double(train_error) / double(train_length);
                 //f3 количество не донт care параметров в правиле суммарно по всем правилам 
                 fitness_small[y] = error_percentage_train;
                 fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
-                //cout << "Train percentage " << error_percentage_train << endl;
+                cout << "Train percentage " << error_percentage_train << endl;
                 
                 if (fitness[y] < best_fitness)
                 {
@@ -1409,12 +1415,17 @@ int main () {
                     best_percentage = error_percentage_train;
                     best_index = y;
                 }
+
+
             }
 
             //ввести матрицу ошибок для задач с N классами
-
-
-
+            /*
+            Нужно отправлять в функцию 
+            1) массив ответов для трэйн
+            2) массив классов для трэйн
+            3) длина
+            */
 
             //реализовать NSGA-II
 
