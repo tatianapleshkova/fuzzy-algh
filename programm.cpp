@@ -457,6 +457,20 @@ double rank_selection (double* fitness, int pop_size, double* rank)
     return 0;
 }
 
+//Fitness Michegan Part
+void checkz_fitness_michegan(int* correct_classification_for_object_train, int* best_rule_for_object_train, int y, int num_rules, int linenumber, int** fitness_michegan)
+{
+    for (int i = 0; i < linenumber; i++)
+    {
+        for (int j = 0; j < num_rules; j++)
+        {
+            if ((best_rule_for_object_train[i] == j) && (correct_classification_for_object_train[i] == 1))
+            {
+                fitness_michegan[y][j] = fitness_michegan[y][j] + 1;
+            }
+        }
+    }
+}
 
 int main () {
     srand(time(0));//в самом начале один раз для рандома
@@ -1743,14 +1757,181 @@ int main () {
             if (which_crossover == 0)
             {
                 //равномерное
+                /*
+                Избежать плохое скрещивание:
+                (Берем среднее и генерируем по нормальному закону с какой-нибудь дисперсией вокруг среднего)
+                Сколько каждое из правил классифицировало объектов ->\
+                Брать чаще те правила, у которых больше
+                */
+                int selection_index = 0;
+                int randpop = 0;
+                for (int y = 0; y < pop_size; y++)
+                {
+                    //не запоминаю, какие индивиды были, а может надо бы!
+                    int k = rand() % pop_size;
+                    while (y == k)
+                    {
+                        k = rand() % pop_size;
+                    }
+                    
+                    int flag_active1 = active_rule_flag(active_rules[1][y], number_rules);
+                    int flag_active2 = active_rule_flag(active_rules[1][k], number_rules);
+                    
+                    int* taken_rules1 = new int[number_rules];
+                    int* taken_rules2 = new int[number_rules];
+
+                    int new_num_rules = rand() % (flag_active1 + flag_active2 - num_class) + num_class;
+                    if (new_num_rules > number_rules)
+                    {
+                        new_num_rules = number_rules;
+                    }
+
+                    for (int l = 0; l < number_rules; l++)
+                    {
+                        taken_rules1[l] = 0;
+                        taken_rules2[l] = 0;
+                    }
+                    
+                    for (int l = 0; l < new_num_rules; l++)
+                    {
+                        double k1 = xrand(1, 0);
+                        if (flag_active1 <= 0)
+                        {
+                            k1 = 0.7;
+                        }
+                        if (flag_active2 <= 0)
+                        {
+                            k1 = 0.2;
+                        }
+                        if (k1 < 0.5)
+                        {
+                            int l1 = rand() % number_rules;
+                            int outofwhile = 0;
+                            while (outofwhile < number_rules + 1)
+                            {
+                                //если в этом индивиде кончатся правила, то нужно брать из другого
+                                if (active_rules[1][y][l1] == 1 && taken_rules1[l1] == 0)//искать активное!
+                                {
+                                    taken_rules1[l1] = 1;
+                                    for (int j = 0; j < columnNumber; j++)
+                                    {
+                                        pop3[y][l][j] = pop2[y][l1][j];
+                                    }
+                                    active_rules[2][y][l] = active_rules[1][y][l1];
+                                    class_rules[2][y][l] = class_rules[1][y][l1];
+                                    confid_rules[2][y][l] = confid_rules[1][y][l1];
+                                    weight_rules[2][y][l] = weight_rules[1][y][l1];
+                                    flag_active1--;
+                                    break;
+                                }
+                                l1++;
+                                outofwhile++;
+                                l1 = l1 % number_rules;
+                            }
+                        }
+                        else
+                        {
+                            int l1 = rand() % number_rules;
+                            int outofwhile = 0;
+                            while (outofwhile < number_rules + 1)
+                            {
+                                //если в этом индивиде кончатся правила, то нужно брать из другого
+                                if (active_rules[1][k][l1] == 1 && taken_rules2[l1] == 0)//искать активное!
+                                {
+                                    taken_rules2[l1] = 1;
+                                    for (int j = 0; j < columnNumber; j++)
+                                    {
+                                        pop3[y][l][j] = pop2[k][l1][j];
+                                    }
+                                    active_rules[2][y][l] = active_rules[1][k][l1];
+                                    class_rules[2][y][l] = class_rules[1][k][l1];
+                                    confid_rules[2][y][l] = confid_rules[1][k][l1];
+                                    weight_rules[2][y][l] = weight_rules[1][k][l1];
+                                    flag_active2--;
+                                    break;
+                                }
+                                l1++;
+                                outofwhile++;
+                                l1 = l1 % number_rules;
+                            }
+                        }
+                    }
+                    delete[] taken_rules1;
+                    delete[] taken_rules2;
+
+                    int start = 0;
+                    int count_class_cross = num_class;
+                    int flag_active3 = active_rule_flag(active_rules[2][y], number_rules);
+                    //больше ли num_class или нет проверку везде сделать!ВАЖНО
+                } 
             }
             else if (which_crossover == 1)
             {
                 //Новая с кол-вом верно классиф.объектов
+                /*
+                Избежать плохое скрещивание:
+                (Берем среднее и генерируем по нормальному закону с какой-нибудь дисперсией вокруг среднего)
+                Сколько каждое из правил классифицировало объектов ->\
+                Брать чаще те правила, у которых больше
+                */
+                int selection_index = 0;
+                int randpop = 0;
+                for (int y = 0; y < pop_size; y++)
+                {
+                    //не запоминаю, какие индивиды были, а надо бы!
+                    int k = rand() % pop_size;
+                    while (y == k)
+                    {
+                        k = rand() % pop_size;
+                    }
+                    
+                    int flag_active1 = active_rule_flag(active_rules[1][y], number_rules);
+                    int flag_active2 = active_rule_flag(active_rules[1][k], number_rules);
+                    
+                    int new_num_rules = rand() % (flag_active1 + flag_active2 - num_class) + num_class;
+                    if (new_num_rules > number_rules)
+                    {
+                        new_num_rules = number_rules;
+                    }
+                    
+                    for (int l = 0; l < new_num_rules; l++)
+                    {
+                        checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
+                        if (fitness_michegan[y][l] > fitness_michegan[k][l])
+                        {
+                            for (int j = 0; j < columnNumber; j++)
+                            {
+                                pop3[y][l][j] = pop2[y][l][j];
+                            }
+                            active_rules[2][y][l] = active_rules[1][y][l];
+                            class_rules[2][y][l] = class_rules[1][y][l];
+                            confid_rules[2][y][l] = confid_rules[1][y][l];
+                            weight_rules[2][y][l] = weight_rules[1][y][l];
+                            flag_active1--;
+                        }
+                        else 
+                        {
+                            for (int j = 0; j < columnNumber; j++)
+                            {
+                                pop3[y][l][j] = pop2[k][l][j];
+                            }
+                            active_rules[2][y][l] = active_rules[1][k][l];
+                            class_rules[2][y][l] = class_rules[1][k][l];
+                            confid_rules[2][y][l] = confid_rules[1][k][l];
+                            weight_rules[2][y][l] = weight_rules[1][k][l];
+                            flag_active2--;
+                        }
+                    }
+
+                    int start = 0;
+                    int count_class_cross = num_class;
+                    int flag_active3 = active_rule_flag(active_rules[2][y], number_rules);
+                    //больше ли num_class или нет проверку везде сделать!ВАЖНО
+                } 
             }
             else 
             {
-
+                //нужно дописать!
             }
 
             //мутация
@@ -1786,7 +1967,11 @@ int main () {
                     }
                 }
             }
-            
+
+
+            //проверить удаление массивов
+            //мичиганская часть и проверка
+              
 //-------------------------------------------удаление массивов для generation----------------------------------------------------
 
             for (int y = 0; y < pop_size; y++)
