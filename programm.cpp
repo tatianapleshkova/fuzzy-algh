@@ -1673,6 +1673,22 @@ int main () {
                 {
                     cout << rank[j] << " - " << fitness[j] << endl;
                 }
+                //ВОПРОС
+                //в pop2 записать только первые ранги лучшие?
+                /*
+                for (int l = 0; l < number_rules; l++)
+                {
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        pop2[y][l][j] = pop[y][l][j];
+                    }
+                    rules_update[1][y][l] = 1;
+                    class_rules[1][y][l] = class_rules[0][y][l];
+                    active_rules[1][y][l] = active_rules[0][y][l];
+                    confid_rules[1][y][l] = confid_rules[0][y][l];
+                    weight_rules[1][y][l] = weight_rules[0][y][l];
+                }
+                */
             }
             else 
             {
@@ -1680,7 +1696,6 @@ int main () {
                 int* dry = new int[T];
                 int selection_index = 0;
                 int randpop = 0;
-                int flag_selection = 0;
                 for (int y = 0; y < pop_size; y++)
                 {
                     for (int u = 0; u < T; u++)
@@ -1695,7 +1710,7 @@ int main () {
                         else
                         {
                             randpop = rand() % pop_size;
-                            for (int y2 = 0; y2 < flag_selection; y++)
+                            for (int y2 = 0; y2 < u; y++)
                             {
                                 while (dry[y2] == randpop)
                                 {
@@ -1707,11 +1722,20 @@ int main () {
                         if (fitness[randpop] < fitness[selection_index] || u == 0)
                         {
                             selection_index = randpop;
-                            flag_selection += 1;
                         }
                     }
-
-                    //незакончено
+                    for (int l = 0; l < number_rules; l++)
+                    {
+                        for (int j = 0; j < columnNumber; j++)
+                        {
+                            pop2[y][l][j] = pop[selection_index][l][j];
+                        }
+                        rules_update[1][y][l] = 1;
+                        class_rules[1][y][l] = class_rules[0][selection_index][l];
+                        active_rules[1][y][l] = active_rules[0][selection_index][l];
+                        confid_rules[1][y][l] = confid_rules[0][selection_index][l];
+                        weight_rules[1][y][l] = weight_rules[0][selection_index][l];
+                    }
                 }
             }
 
