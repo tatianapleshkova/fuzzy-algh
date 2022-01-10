@@ -427,7 +427,7 @@ double rank_selection (double* fitness, int pop_size, double* rank)
         rank[i] = i + 1;
     }
     
-    for (int i = 0; i < pop_size; i++)
+    for (int i = 0; i < pop_size-1; i++)
     {
         //повторяющиеся значения среднее
         if (fitness_extra[i][0] == fitness_extra[i + 1][0])
@@ -1664,7 +1664,7 @@ int main () {
                 //в функции
                 //сортируем массив по возрастанию fitness+
                 //ставим ранги, проверяем одинаковые fitness+
-                //для одинаковых средний ранг рассчитываем+-
+                //для одинаковых средний ранг рассчитываем+- ТОЛЬКО ДЛЯ 2-х повторяющихся
                 //возвращаем все ранги и фитнес на место в main, вроде +
                 //ну и по рангу смотрим какой лучше взять
                 rank_selection(fitness, pop_size, rank);
