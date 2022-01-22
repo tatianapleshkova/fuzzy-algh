@@ -16,12 +16,14 @@ void swap_rows(double** a, int r1, int r2)
     double* b = a[r1];
     a[r1] = a[r2];
     a[r2] = b;
+
+    delete[] b;
 }
 
 //сортировка строк двух массивов
-void swap_rows_two_mas(double** a, int r1, int r2, double* a2)
+void swap_rows_two_mas(double* a, int r1, int r2, double* a2)
 {
-    double* b = a[r1];
+    double b = a[r1];
     a[r1] = a[r2];
     a[r2] = b;
 
@@ -136,6 +138,16 @@ void create_rule(int num_term, int columnNumber, double** x, int* rule, int* ran
     for (int i = 0; i < num_term; i++)
     {
         m_allterm[i] = new double[columnNumber];
+    }
+
+    //обнуление
+    for (int i = 0; i < num_term; i++)
+    {
+        vero_fit[i] = 0;
+        for (int j = 0; j < num_term; j++)
+        {
+            m_allterm[i][j] = 0;
+        }
     }
 
     for (int i = 0; i < ran; i++)
@@ -392,30 +404,30 @@ void error_matrix(int train_length, double* reply_train, double* train_class_ans
 //ранговая селекция
 double rank_selection (double* fitness, int pop_size, double* rank)
 {
-    double** fitness_extra = new double*[pop_size];
-    for (int i = 0; i < pop_size; i++)
-    {
-        fitness_extra[i] = new double[2];
-    }
+    double* fitness_watch = new double[pop_size];
     for (int j = 0; j < pop_size; j++)
     {
-        
-        fitness_extra[j][0] = fitness[j];
-        fitness_extra[j][1] = j + 1;
+        fitness_watch[j] = 0;
     }
+
+    for (int j = 0; j < pop_size; j++)
+    {
+        fitness_watch[j] = (double)j;
+    }
+
     for(int i = 0; i < pop_size-1; i++)
     {
         // Поиск наименьшего в первом столбце
-        double m = fitness_extra[i][0];
+        double m = fitness[i];
         int idx = i;
         for(int j = i; j < pop_size; j++)
         {
-            if (fitness_extra[j][0] < m) 
+            if (fitness[j] < m) 
             {
-                m = fitness_extra[j][0];
+                m = fitness[j];
                 idx = j;
                 // Обмен
-                swap_rows(fitness_extra, i, idx);
+                swap_rows_two_mas(fitness, i, idx, fitness_watch);
             }
         }
     }
@@ -424,55 +436,53 @@ double rank_selection (double* fitness, int pop_size, double* rank)
     {
         rank[i] = i + 1;//ранг с 1 начинается
     }
-    
-    /*for (int i = 0; i < pop_size; i++)
-    {
-        cout << fitness_extra[i][0] << '-' << count(fitness_extra, fitness_extra+pop_size, fitness_extra[i][0]) << endl;
-    }*/
-
-    double* fitness_try = new double[pop_size];
-
-    for (int i = 0; i < pop_size; i++)
-    {
-        fitness_try[i] = fitness_extra[i][0];
-    }
 
     int repeat = 0;
-    for (int i = 0; i < pop_size; i++)
+    int counter_i = 0;
+    for (int i = counter_i; i < pop_size - 1; i++)
     {
-        //НЕПРАВИЛЬНО
+        //ПРОВЕРИТЬ
         //повторяющиеся значения среднее
-        repeat = count(fitness_try, fitness_try+pop_size, fitness_try[i]);
-        if (repeat == 2)
+        repeat = count(fitness, fitness+pop_size, fitness[i]);
+              
+        if (repeat < 2)
         {
-            rank[i] = (rank[i] + rank[i + 1])/2;
+            counter_i++;
         }
-        if (repeat == 3)
+        else
         {
-            rank[i] = (rank[i] + rank[i + 1] + rank[i + 2])/3;
-        }
-        if (repeat == 4)
-        {
-            rank[i] = (rank[i] + rank[i + 1] + rank[i + 2] + rank[i + 3])/4;
+            int sum = 0;
+            for (int j = counter_i; j < counter_i + repeat; j++)
+            {
+                sum = sum + rank[j];
+            }
+
+            for (int j = counter_i; j < counter_i + repeat; j++)
+            {
+                rank[j] = sum/repeat;
+            }
+
+            counter_i = counter_i + repeat;
         }
     } 
 
     for(int i = 0; i < pop_size-1; i++)
     {
-        // Поиск наименьшего во втором столбце
-        double m = fitness_extra[i][1];
+        double minin = fitness_watch[i];
         int idx = i;
         for(int j = i; j < pop_size; j++)
         {
-            if (fitness_extra[j][1] < m) 
+            if (fitness_watch[j] < minin) 
             {
-                m = fitness_extra[j][1];
+                minin = fitness_watch[j];
                 idx = j;
                 // Обмен
-                swap_rows_two_mas(fitness_extra, i, idx, rank);
+                swap_rows_two_mas(fitness_watch, i, idx, rank);
             }
         }
     }
+
+    delete[] fitness_watch;//ААААААААААААА
 
     return 0;
 }
@@ -657,7 +667,7 @@ int main () {
     //0 - формирование правила с одного случайного объекта
     //1 - с n случайных объектов
     //2 - с n случайных объектов с минимальным евклидовым расстоянием
-    int which_selection = 1;
+    int which_selection = 0;
     //0 - ранговая селекция 
     //1 - турнирная селекция с N размером
     int which_crossover = 0;
@@ -1467,6 +1477,7 @@ int main () {
                     }
 
                     delete[] in_rule;
+                    delete[] in_confid;
 
                     for (int j = 0; j < ed_fact; j++)
                     {
@@ -1602,7 +1613,7 @@ int main () {
                 fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
                 if (y == 0)
                 {
-                    cout << "Train percentage " << error_percentage_train << endl;
+                    //cout << "Train percentage " << error_percentage_train << endl;
                 }
                 //cout << "Train fitness " << fitness[y] << endl;
                 
@@ -1740,7 +1751,6 @@ int main () {
                 rank_selection(fitness, pop_size, rank);
 
                 double sum_rang = 0;
-                double sum_rang_prop = 0;
 
                 for (int j = 0; j < pop_size; j++)
                 {
@@ -1752,19 +1762,9 @@ int main () {
                 {
                     fitness_rang[j] = rank[j]/sum_rang;
                 }
+                //проверить обнуление, int, деление ВАЖНО!!!!
 
-                for (int j = 0; j < pop_size; j++)
-                {
-                    fitness_rang[j] = rank[j]/sum_rang;
-                    sum_rang_prop = sum_rang_prop + fitness_rang[j];
-                }
-
-                for (int j = 0; j < pop_size; j++)
-                {
-                    fitness_rang_prop[j] = fitness_rang[j]/sum_rang_prop;
-                }
-                
-                double** prop_sel = new double*[pop_size];
+                double** prop_sel = new double*[pop_size];//удалить!
                 for (int i = 0; i < pop_size; i++)
                 {
                     prop_sel[i] = new double[2];
@@ -1772,7 +1772,7 @@ int main () {
 
                 for (int j = 0; j < pop_size; j++)
                 {
-                    prop_sel[j][0] = fitness_rang_prop[j];
+                    prop_sel[j][0] = fitness_rang[j];
                     prop_sel[j][1] = j;
                 }
 
@@ -1817,6 +1817,12 @@ int main () {
                         }
                     }
                 }
+
+                for (int j = 0; j < pop_size; j++)
+                {
+                    delete prop_sel[j];
+                }
+                delete prop_sel;
             }
             else 
             {
@@ -1870,6 +1876,8 @@ int main () {
                         weight_rules[1][y][l] = weight_rules[0][selection_index][l];
                     }
                 }
+
+                delete[] dry;
             }
 
             //скрещивание
@@ -1895,7 +1903,7 @@ int main () {
                     int new_num_rules = 0;
                     int flag_active1 = active_rule_flag(active_rules[1][y], number_rules);
                     int flag_active2 = active_rule_flag(active_rules[1][k], number_rules);
-                    if ((flag_active1 + flag_active2 - num_class) + num_class < 0)
+                    if (flag_active1 + flag_active2 - num_class <= 0)
                     {
                         new_num_rules = flag_active1 + flag_active2;
                     }
@@ -2246,6 +2254,7 @@ int main () {
                                 }
                                 delete[] in_rule;
                                 delete[] in_confid;
+                                delete[] obj_for_rule;
                                 if (check == 1)
                                 {
                                     break;
@@ -2343,7 +2352,7 @@ int main () {
                 //реализовать NSGA-II
                 fitness_small[y] = error_percentage_train;
                 fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
-                cout << "Train percentage " << error_percentage_train << " Правил " << flag_active << " ДОНТ КЭР " << flag_not_dontcare <<  endl;
+                //cout << "Train percentage " << error_percentage_train << " Правил " << flag_active << " ДОНТ КЭР " << flag_not_dontcare <<  endl;
                 
                 if (fitness[y] < best_fitness)
                 {
@@ -2504,7 +2513,7 @@ int main () {
             }
             delete reply_train;
 
-            delete[] rank;
+            delete[] rank;//АААААААААААААААААААААААА
         }
 
 //-------------------------------------------удаление массивов для kfold----------------------------------------------------
@@ -2544,7 +2553,7 @@ int main () {
         delete fitness_michegan;
         delete correct_classification_num;
 
-        delete[] class_values_count_train;//остановка
+        delete[] class_values_count_train;//ААААААААААААААААААААААААААААА
         delete[] fitness;
         delete[] fitness_small;
         delete[] fitness_rang;
