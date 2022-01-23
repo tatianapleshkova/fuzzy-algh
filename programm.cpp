@@ -251,6 +251,13 @@ void confidence(int num_class, int lineNumber, int columnNumber, double* class_a
 {
     //расчитываем конфиденс
     double* m = new double[num_class];
+
+    //обнуление
+    for (int j = 0; j < num_class; j++)
+    {
+        m[j] = 0;
+    }
+
     double sum_m = 0;
     for (int j = 0; j < lineNumber; j++)
     {
@@ -369,6 +376,12 @@ void error_matrix(int train_length, double* reply_train, double* train_class_ans
     //подсчет количества каждого класса в массиве 
     int* class_values_count_reply = new int[num_class]; 
 
+    //обнуление
+    for (int i = 0; i < num_class; i++)
+    {
+        class_values_count_reply[i] = 0;
+    }
+
     //подсчет количества повторяющихся значений для каждого класса в массиве
     for(int class_id = 0; class_id < num_class; class_id++)
     {
@@ -405,6 +418,8 @@ void error_matrix(int train_length, double* reply_train, double* train_class_ans
 double rank_selection (double* fitness, int pop_size, double* rank)
 {
     double* fitness_watch = new double[pop_size];
+    
+    //обнуление
     for (int j = 0; j < pop_size; j++)
     {
         fitness_watch[j] = 0;
@@ -977,6 +992,12 @@ int main () {
         //подсчет количества каждого класса в train выборке!!!
         int* class_values_count_train = new int[num_class - 1];
 
+        //обнуление
+        for (int j = 0; j < num_class; j++)
+        {
+            class_values_count_train[j] = 0;
+        }
+
         //задача подбора информативных признаков 
 
         //подсчет количества повторяющихся значений для каждого класса в train set
@@ -1513,9 +1534,26 @@ int main () {
         {
             best_rule_base[j] = new int[columnNumber];
         }
+
+        //Обнуление
+        for (int j = 0; j < number_rules; j++)
+        {
+            for (int l = 0; l < columnNumber; l++)
+            {
+                best_rule_base[j][l] = 0;
+            }
+        }
+
         int* best_class_rule_base = new int[number_rules];
 
         double* persentahe_error_test_mas = new double[number_rules];
+
+        //Обнуление
+        for (int j = 0; j < number_rules; j++)
+        {
+            best_class_rule_base[j] = 0;
+            persentahe_error_test_mas[j] = 0;
+        } 
 
         double best_fitness = lineNumber;
         double best_percentage = lineNumber;
@@ -1535,6 +1573,7 @@ int main () {
                 reply_test[j] = new double[test_length];
             }
 
+            //Обнуление
             for (int j = 0; j < pop_size; j++)
             {
                 for (int l = 0; l < train_length; l++)
@@ -1631,6 +1670,7 @@ int main () {
                     mfalse[j] = new int[num_class];
                 }
 
+                //Обнуление
                 for (int j = 0; j < num_class; j++)
                 {
                     for (int l = 0; l < num_class; l++)
@@ -1764,10 +1804,19 @@ int main () {
                 }
                 //проверить обнуление, int, деление ВАЖНО!!!!
 
-                double** prop_sel = new double*[pop_size];//удалить!
-                for (int i = 0; i < pop_size; i++)
+                double** prop_sel = new double*[pop_size];
+                for (int j = 0; j < pop_size; j++)
                 {
-                    prop_sel[i] = new double[2];
+                    prop_sel[j] = new double[2];
+                }
+
+                //Обнуление
+                for (int j = 0; j < pop_size; j++)
+                {
+                    for (int l = 0; l < 2; l++)
+                    {
+                        prop_sel[j][l] = 0;
+                    }
                 }
 
                 for (int j = 0; j < pop_size; j++)
@@ -1776,19 +1825,19 @@ int main () {
                     prop_sel[j][1] = j;
                 }
 
-                for (int i = 0; i < pop_size-1; i++)
+                for (int l = 0; l < pop_size-1; l++)
                 {
                     // Поиск наименьшего в первом столбце
-                    double m = prop_sel[i][0];
-                    int idx = i;
-                    for(int j = i; j < pop_size; j++)
+                    double m = prop_sel[l][0];
+                    int idx = l;
+                    for(int j = l; j < pop_size; j++)
                     {
                         if (prop_sel[j][0] < m) 
                         {
                             m = prop_sel[j][0];
                             idx = j;
                             // Обмен
-                            swap_rows(prop_sel, i, idx);
+                            swap_rows(prop_sel, l, idx);
                         }
                     }
                 }
@@ -1921,6 +1970,7 @@ int main () {
                         new_num_rules = number_rules;
                     }
 
+                    //обнуление
                     for (int l = 0; l < number_rules; l++)
                     {
                         taken_rules1[l] = 0;
@@ -2294,6 +2344,7 @@ int main () {
             int best_index2 = 0;
             for (int y = 0; y < pop_size; y++)
             {
+                //Обнуление
                 for (int j = 0; j < train_length; j++)
                 {
                     reply_train[y][j] = 0;
@@ -2322,7 +2373,8 @@ int main () {
                         correct_classification_for_object_train[y][l] = 1;//правильно классифицированный объект
                     }
                 }
-
+                
+                //Обнуление
                 for (int j = 0; j < number_rules; j++)
                 {
                     correct_classification_num[y][j] = 0;
@@ -2377,7 +2429,8 @@ int main () {
                 {
                     mfalse[j] = new int[num_class];
                 }
-
+                
+                //Обнуление
                 for (int j = 0; j < num_class; j++)
                 {
                     for (int l = 0; l < num_class; l++)
