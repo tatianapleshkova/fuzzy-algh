@@ -518,7 +518,6 @@ int main () {
     cout << "Please entry file name and his extension (for example, iris.txt) - ";
     cin >> read_file;
 
-
     ifstream myfile (read_file.c_str());//считываение файла
     int lineNumber = 0;//кол-во строк
     int columnNumberFile = 0;//количество столбцов во всем файле(параметры + класс)
@@ -685,43 +684,40 @@ int main () {
 
     //закомментировать
     string whatfileoutput;
-    whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
-
-    double accuracy = 0;
-    double precision = 0;
-    double recall = 0;
-    double Fscore = 0;
-    int numerator = 0;
-    int denominator = 0; 
-    int b = 1;
-
-    double accuracy_test = 0;
-    double precision_test = 0;
-    double recall_test = 0;
-    double Fscore_test = 0;
-
-    int dont_care_file = 0;
-    int num_rule_file = 0;
-
-    double average_accuracy_kfold = 0;//точность на обучающей
-    double average_accuracy_test_kfold = 0;//точность на тестовой 
-    double average_num_rule_file_kfold = 0;//количество активных правил
-    double average_dont_care_file_kfold = 0;//длина правила
-
-    double average_precision_kfold = 0;
-    double average_recall_kfold = 0; 
-    double average_Fscore_kfold = 0;
-
-    double average_precision_test_kfold = 0;
-    double average_recall_test_kfold = 0; 
-    double average_Fscore_test_kfold = 0;
-    
+    //whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
 
     double** count_average_kfold = new double*[10];
     for (int i = 0; i < 10; i++)
     {
         count_average_kfold[i] = new double[kfold];
     }
+
+    int piece = 10;
+    /*double** count_average_kfold = new double*[npop];
+    for (int i = 0; i < npop; i++)
+    {
+        count_average_kfold[i] = new double[kfold];
+    }
+    //--------------------изменения-------------------------
+    double average_fitness_kfold = 0;//точность на обучающей
+    double average_fitness_kfold_test = 0;//точность на тестовой 
+    double average_active_kfold = 0;//количество активных правил
+    double average_accuracy_kfold = 0;//accuracy правила*/
+    cross_num = cross_num_const;
+    int train_length = lineNumber-(cross_num_const+last_data);
+    int test_length = cross_num_const+last_data; 
+    double** test_data = new double*[cross_num_const+last_data];
+    for (int i = 0; i < cross_num_const+last_data; i++)
+    {
+        test_data[i] = new double[columnNumber];
+    }
+    double** train_data = new double*[lineNumber-(cross_num_const+last_data)];
+    for (int i = 0; i < lineNumber-(cross_num_const+last_data); i++)
+    {
+        train_data[i] = new double[columnNumber];
+    }
+    double* test_class_answers = new double[test_length];
+    double* train_class_answers = new double[train_length];
 //-----------------------------------------------нормировка------------------------------------------------------
     double** data = new double*[lineNumber];
     for (int i = 0; i < lineNumber; i++)
@@ -801,32 +797,71 @@ int main () {
     }
     //cout << cross_num;*/
     
-    int piece = 10;
-    /*double** count_average_kfold = new double*[npop];
-    for (int i = 0; i < npop; i++)
+    //перебор для вывода ВЫВЕСТИ В СВЕТ
+    /*for (int initialize = 0; initialize < 3; initialize++)
     {
-        count_average_kfold[i] = new double[kfold];
-    }
-    //--------------------изменения-------------------------
-    double average_fitness_kfold = 0;//точность на обучающей
-    double average_fitness_kfold_test = 0;//точность на тестовой 
-    double average_active_kfold = 0;//количество активных правил
-    double average_accuracy_kfold = 0;//accuracy правила*/
-    cross_num = cross_num_const;
-    int train_length = lineNumber-(cross_num_const+last_data);
-    int test_length = cross_num_const+last_data; 
-    double** test_data = new double*[cross_num_const+last_data];
-    for (int i = 0; i < cross_num_const+last_data; i++)
+        which_initial = initialize;
+        for (int selection_int = 0; selection_int < 2; selection_int++)
+        {
+            which_selection = selection_int;
+            for (int crossover_int = 0; crossover_int < 2; crossover_int++)
+            {
+                which_crossover = crossover_int;
+                for (int mutation_int = 0; mutation_int < 3; mutation_int++)
+                {
+                    which_mutation = mutation_int;
+
+                    string whatfileoutput;
+                    whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
+
+
+
+                    //кооод
+
+
+
+                }
+            }
+        }
+    }*/
+
+    double accuracy = 0;
+    double precision = 0;
+    double recall = 0;
+    double Fscore = 0;
+    int numerator = 0;
+    int denominator = 0; 
+    int b = 1;
+
+    double accuracy_test = 0;
+    double precision_test = 0;
+    double recall_test = 0;
+    double Fscore_test = 0;
+
+    double dont_care_file = 0;
+    double num_rule_file = 0;
+
+    double average_accuracy_kfold = 0;//точность на обучающей
+    double average_accuracy_test_kfold = 0;//точность на тестовой 
+    double average_num_rule_file_kfold = 0;//количество активных правил
+    double average_dont_care_file_kfold = 0;//длина правила
+
+    double average_precision_kfold = 0;
+    double average_recall_kfold = 0; 
+    double average_Fscore_kfold = 0;
+
+    double average_precision_test_kfold = 0;
+    double average_recall_test_kfold = 0; 
+    double average_Fscore_test_kfold = 0;
+    
+    //обнуление
+    for (int i = 0; i < 10; i++)
     {
-        test_data[i] = new double[columnNumber];
+        for (int j = 0; j < 10; j++)
+        {
+            count_average_kfold[i][j] = 0;
+        }
     }
-    double** train_data = new double*[lineNumber-(cross_num_const+last_data)];
-    for (int i = 0; i < lineNumber-(cross_num_const+last_data); i++)
-    {
-        train_data[i] = new double[columnNumber];
-    }
-    double* test_class_answers = new double[test_length];
-    double* train_class_answers = new double[train_length];
 
     for (int i = 0; i < kfold; i++)
     {
@@ -1085,33 +1120,6 @@ int main () {
         }
         break;*/
 //-------------------------------------------начало га-лгоритма----------------------------------------------------
-        //перебор для вывода ВЫВЕСТИ В СВЕТ
-        /*for (int initialize = 0; initialize < 3; initialize++)
-        {
-            which_initial = initialize;
-            for (int selection_int = 0; selection_int < 2; selection_int++)
-            {
-                which_selection = selection_int;
-                for (int crossover_int = 0; crossover_int < 2; crossover_int++)
-                {
-                    which_crossover = crossover_int;
-                    for (int mutation_int = 0; mutation_int < 3; mutation_int++)
-                    {
-                        which_mutation = mutation_int;
-
-                        string whatfileoutput;
-                        whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
-
-
-
-                        //кооод
-
-
-
-                    }
-                }
-            }
-        }*/
         //инициализация
         int q_number = 0;
         if (which_initial == 0)
@@ -1998,9 +2006,9 @@ int main () {
                     recall = recall/(double)num_class;//для любого кол-ва классов
                     Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
 
-                    dont_care_file = flag_not_dontcare;
                     num_rule_file = flag_active;
                     best_index = y;
+                    dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index]);
 
                     /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
                     cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
@@ -2734,7 +2742,7 @@ int main () {
                     recall = recall/(double)num_class;//для любого кол-ва классов
                     Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
                     
-                    dont_care_file = flag_not_dontcare;
+                    dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index]);;
                     num_rule_file = flag_active;
 
                     /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
@@ -3001,6 +3009,19 @@ int main () {
         average_Fscore_test_kfold = average_Fscore_test_kfold + count_average_kfold[9][i];//9
     }
 
+    average_accuracy_kfold = average_accuracy_kfold / double(kfold);//точность на обучающей 0
+    average_accuracy_test_kfold = average_accuracy_test_kfold / double(kfold);//точность на тестовой 6
+    average_num_rule_file_kfold = average_num_rule_file_kfold / double(kfold);//количество активных правил 4
+    average_dont_care_file_kfold = average_dont_care_file_kfold / double(kfold);//длина правила 5
+
+    average_precision_kfold = average_precision_kfold / double(kfold);//1
+    average_recall_kfold = average_recall_kfold / double(kfold);//2
+    average_Fscore_kfold = average_Fscore_kfold / double(kfold);//3
+
+    average_precision_test_kfold = average_precision_test_kfold / double(kfold);//7
+    average_recall_test_kfold = average_recall_test_kfold / double(kfold);//8
+    average_Fscore_test_kfold = average_Fscore_test_kfold / double(kfold);//9
+
 //-------------------------------------------вывод main в файл----------------------------------------------------
     
     ofstream outpuut;
@@ -3012,6 +3033,12 @@ int main () {
     outpuut.close();
 
 //-------------------------------------------удаление массивов main----------------------------------------------------
+    for (int y = 0; y < 10; y++)
+    {
+        delete count_average_kfold[y];
+    }
+    delete count_average_kfold;
+    
     for (int y = 0; y < cross_num_const+last_data; y++)
     {
         delete test_data[y];
