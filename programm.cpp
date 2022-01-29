@@ -1821,11 +1821,16 @@ int main () {
         }
 
         int* best_class_rule_base = new int[number_rules];
+        int* best_confid_rule_base = new int[number_rules];
+        int* best_active_rule_base = new int[number_rules];
+        
 
         //Обнуление
         for (int j = 0; j < number_rules; j++)
         {
             best_class_rule_base[j] = 0;
+            best_confid_rule_base[j] = 0;
+            best_active_rule_base[j] = 0;
         } 
 
         double best_fitness = lineNumber;
@@ -2023,6 +2028,8 @@ int main () {
                         {
                             best_rule_base[l][j] = pop[y][l][j];//база правил с наименьшей ошибкой
                         }
+                        best_confid_rule_base[l] = confid_rules[0][y][l];
+                        best_active_rule_base[l] = active_rules[0][y][l];
                         best_class_rule_base[l] = class_rules[0][y][l];
                     }
                 }          
@@ -2945,14 +2952,17 @@ int main () {
         //запись базы правил в файл
         for (int j = 0; j < number_rules; j++)
         {
-            for (int l = 0; l < columnNumber; l++)
+            if (best_active_rule_base[j] == 1)
             {
-                outpuut2 << best_rule_base[j][l] << " ";
+                 for (int l = 0; l < columnNumber; l++)
+                {
+                    outpuut2 << best_rule_base[j][l] << " ";
+                }
+                outpuut2 << best_class_rule_base[j];
+                outpuut2 << endl;
             }
-            outpuut2 << best_class_rule_base[j];
         }
-        outpuut2 << endl;
-
+        
         outpuut2.close();
         
 //-------------------------------------------удаление массивов для kfold----------------------------------------------------
@@ -3005,6 +3015,7 @@ int main () {
         }
         delete best_rule_base;
         delete[] best_class_rule_base;
+        delete[] best_confid_rule_base;
 
         for (int ip = 0; ip < npop; ip++)
         {
