@@ -2933,6 +2933,27 @@ int main () {
             outpuut1 << endl;
         }
         outpuut1.close();
+
+        ofstream outpuut2;
+
+        string whatfileoutputrules;
+        whatfileoutputrules = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + "rules.txt";
+
+        outpuut2.open(whatfileoutputrules.c_str(), ios::app);
+        outpuut2 << i << endl;
+
+        //запись базы правил в файл
+        for (int j = 0; j < number_rules; j++)
+        {
+            for (int l = 0; l < columnNumber; l++)
+            {
+                outpuut2 << best_rule_base[j][l] << " ";
+            }
+            outpuut2 << best_class_rule_base[j];
+        }
+        outpuut2 << endl;
+
+        outpuut2.close();
         
 //-------------------------------------------удаление массивов для kfold----------------------------------------------------
         for (int ip = 0; ip < pop_size; ip++)
