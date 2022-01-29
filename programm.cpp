@@ -2363,26 +2363,28 @@ int main () {
             //терм + сгенерированное число от 1 до 13 и остаток от деления на 14
             for (int y = 0; y < pop_size; y++)
             {
+                int flag_active = active_rule_flag(active_rules[2][y], number_rules);
+                double k1 = 0;
+                if (which_mutation == 0)
+                {
+                    //переменные / 3 
+                    k1 = 1.0 / double(columnNumber) / double (flag_active) / 3.0;//слабая
+                }
+                else if (which_mutation == 1)
+                {
+                    k1 = 1.0 / double(columnNumber) / double (flag_active);//средняя 
+                    
+                }
+                else 
+                {
+                    double var_min = 3.0 / double(columnNumber) / double(flag_active);
+                    k1 = min(var_min, 1.0);//сильная 
+                }
                 for (int l = 0; l < number_rules; l++)
                 {
-                    double k1 = 0;
-                    int flag_active = active_rule_flag(active_rules[2][y], number_rules);
-                    if (which_mutation == 0)
-                    {
-                        k1 = double(flag_active) / 3.0;//слабая
-                    }
-                    else if (which_mutation == 1)
-                    {
-                        k1 = 1.0 / double(flag_active);//средняя 
-                    }
-                    else 
-                    {
-                        double var_min = 3.0/double(flag_active);
-                        k1 = min(var_min, 1.0);//сильная 
-                    }
-                    int k4 = (rand() % (num_term-2)) + 1;
                     for (int j = 0; j < columnNumber; j++)
                     {
+                        int k4 = (rand() % (num_term-2)) + 1;
                         int new_term = (pop3[y][l][j] + k4) % num_term;
                         double k = xrand(0, 1);
                         if (k < k1)
@@ -2781,8 +2783,10 @@ int main () {
                 }
             }     
 
-            if (generation > (gen - 2))
-            {
+            //if (generation > (gen - 2))
+            //{
+
+                //вывести в файл бп лучшую
                 for (int j = 0; j < test_length; j++)
                 {
                     Rules(test_data[j], best_rule_base, best_class_rule_base, confid_rules[0][best_index], columnNumber, number_rules, best_rule_for_object_test, reply_test, best_index, j);//отправка тестовой выборки
@@ -2882,7 +2886,7 @@ int main () {
                     delete mfalse[j];
                 }
                 delete mfalse;
-            }
+            //}
             
 //-------------------------------------------удаление массивов для generation----------------------------------------------------
 
