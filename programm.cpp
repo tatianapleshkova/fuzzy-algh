@@ -680,9 +680,9 @@ int main () {
     int w3 = 1;
     int npop = 4;
     //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
-    int num_random = 4;
+    int num_random = 5;
     //количество объектов, на основании которых создается правило
-    int num_obj_create_rule = 2;
+    int num_obj_create_rule = 3;
     int kfold = 10;
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
@@ -797,15 +797,15 @@ int main () {
     for (int initialize = 0; initialize < 3; initialize++)
     {
         which_initial = initialize;
-        for (int selection_int = 0; selection_int < 2; selection_int++)
+        //for (int selection_int = 0; selection_int < 2; selection_int++)
         {
-            which_selection = selection_int;
+            which_selection = 1;
             //for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
-                //which_crossover = crossover_int;
-                for (int mutation_int = 0; mutation_int < 3; mutation_int++)
+                which_crossover = 1;
+                //for (int mutation_int = 0; mutation_int < 3; mutation_int++)
                 {
-                    which_mutation = mutation_int;
+                    which_mutation = 1;
 
                     string whatfileoutput;
                     whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
