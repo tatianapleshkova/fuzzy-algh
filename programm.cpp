@@ -800,9 +800,9 @@ int main () {
         for (int selection_int = 0; selection_int < 2; selection_int++)
         {
             which_selection = selection_int;
-            for (int crossover_int = 0; crossover_int < 2; crossover_int++)
+            //for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
-                which_crossover = crossover_int;
+                //which_crossover = crossover_int;
                 for (int mutation_int = 0; mutation_int < 3; mutation_int++)
                 {
                     which_mutation = mutation_int;
@@ -919,6 +919,7 @@ int main () {
         int** best_rule_for_object_test = new int*[pop_size];
         int** correct_classification_for_object_train = new int*[pop_size];
         int** fitness_michegan = new int*[pop_size];
+        int** fitness_michegan2 = new int*[pop_size];
         int** correct_classification_num = new int*[pop_size];
         double* fitness = new double[pop_size];
         double* fitness_small = new double[pop_size];
@@ -934,6 +935,7 @@ int main () {
             best_rule_for_object_train[ip] = new int[lineNumber-(cross_num_const+last_data)];
             best_rule_for_object_test[ip] = new int[cross_num_const+last_data];
             fitness_michegan[ip] = new int[number_rules];
+            fitness_michegan2[ip] = new int[number_rules];
             correct_classification_num[ip] = new int[number_rules];
             //правильно классифицированный объект - 1
             //неправильно классифицированный объект - 0
@@ -2372,6 +2374,7 @@ int main () {
                 */
                 int selection_index = 0;
                 int randpop = 0;
+
                 for (int y = 0; y < pop_size; y++)
                 {
                     //не запоминаю, какие индивиды были, а надо бы!
@@ -2399,40 +2402,52 @@ int main () {
                     {
                         new_num_rules = number_rules;
                     }
-                    
+
+                    checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
+                    checkz_fitness_michegan(correct_classification_for_object_train[k], best_rule_for_object_train[k], k, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan2);
+
                     for (int l = 0; l < new_num_rules; l++)
                     {
-                        checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
-                        if (fitness_michegan[y][l] > fitness_michegan[k][l])
+                        int rule1 = rand() % number_rules;//активное из y
+                        int rule2 = rand() % number_rules;//активное из k
+
+                        for (int l1 = 0; l1 < number_rules; l1++)
+                        {
+                            if (confid_rules[1][y][rule1] < better_than)
+                            {
+                                rule1++;
+                                rule1 = rule1%number_rules;
+                            }
+                            if (confid_rules[1][k][rule2] < better_than)
+                            {
+                                rule2++;
+                                rule2 = rule2%number_rules;
+                            }
+                        }
+                      
+                        if (fitness_michegan[y][rule1] > fitness_michegan2[k][rule2])
                         {
                             for (int j = 0; j < columnNumber; j++)
                             {
-                                pop3[y][l][j] = pop2[y][l][j];
+                                pop3[y][l][j] = pop2[y][rule1][j];
                             }
-                            active_rules[2][y][l] = active_rules[1][y][l];
-                            class_rules[2][y][l] = class_rules[1][y][l];
-                            confid_rules[2][y][l] = confid_rules[1][y][l];
-                            weight_rules[2][y][l] = weight_rules[1][y][l];
-                            flag_active1--;
+                            active_rules[2][y][l] = active_rules[1][y][rule1];
+                            class_rules[2][y][l] = class_rules[1][y][rule1];
+                            confid_rules[2][y][l] = confid_rules[1][y][rule1];
+                            weight_rules[2][y][l] = weight_rules[1][y][rule1];
                         }
                         else 
                         {
                             for (int j = 0; j < columnNumber; j++)
                             {
-                                pop3[y][l][j] = pop2[k][l][j];
+                                pop3[y][l][j] = pop2[k][rule2][j];
                             }
-                            active_rules[2][y][l] = active_rules[1][k][l];
-                            class_rules[2][y][l] = class_rules[1][k][l];
-                            confid_rules[2][y][l] = confid_rules[1][k][l];
-                            weight_rules[2][y][l] = weight_rules[1][k][l];
-                            flag_active2--;
+                            active_rules[2][y][l] = active_rules[1][k][rule2];
+                            class_rules[2][y][l] = class_rules[1][k][rule2];
+                            confid_rules[2][y][l] = confid_rules[1][k][rule2];
+                            weight_rules[2][y][l] = weight_rules[1][k][rule2];
                         }
                     }
-
-                    int start = 0;
-                    int count_class_cross = num_class;
-                    int flag_active3 = active_rule_flag(active_rules[2][y], number_rules);
-                    //больше ли num_class или нет проверку везде сделать!ВАЖНО
                 } 
             }
 
