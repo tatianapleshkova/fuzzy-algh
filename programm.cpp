@@ -3065,7 +3065,7 @@ int main () {
         //запись базы правил в файл
         for (int j = 0; j < number_rules; j++)
         {
-            if (best_confid_rule_base[j] > better_than)
+            if (best_confid_rule_base[j] > better_than && best_active_rule_base[j] == 1)
             {
                 for (int l = 0; l < columnNumber; l++)
                 {
