@@ -197,7 +197,7 @@ void create_rule(int num_term, int columnNumber, double** x, int* rule, int* ran
             sum_interval += vero_fit[j];
         }
     }
-    //с вероятностью > 0.85 заменяем на don't care 
+    //с вероятностью > 0.5 заменяем на don't care 
     for (int j = 0; j < columnNumber; j++)
     {
         double change = xrand(0, 1);
@@ -218,14 +218,15 @@ void create_rule(int num_term, int columnNumber, double** x, int* rule, int* ran
 //Подаем правило, выводим мю для такого-то класса
 double check_conf_rule(double* x, int* rule_gen, int col)
 {
-    double max = 0;
     double min = 1;
+    int flag = 0;
     for (int b = 0; b < col; b++)
     {
         double temp = 0;
         if (rule_gen[b] == 0)
         {
             temp = 1;
+            flag++;
         }
         else
         {
@@ -237,13 +238,12 @@ double check_conf_rule(double* x, int* rule_gen, int col)
             min = temp;
         }
     }
-    //Процедура argmax
-    if (min > max)
+    if (flag == col)
     {
-        max = min;
+        min = 0;
     }
     
-    return max;
+    return min;
 }
 
 //confidence measure of the fuzzy association rule
@@ -261,20 +261,20 @@ void confidence(int num_class, int lineNumber, int columnNumber, double* class_a
     double sum_m = 0;
     for (int j = 0; j < lineNumber; j++)
     {
-        for (int l = 0; l < num_class; l++)
-        {
-            if (class_answers[j] == l)
-            {
-                m[l] += check_conf_rule(data[j], rule, columnNumber);
-            }
-        }
-        sum_m += check_conf_rule(data[j], rule, columnNumber);
+        double k = 0;
+        k = check_conf_rule(data[j], rule, columnNumber);
+
+        m[(int)class_answers[j]] += k;
+
+        sum_m += k;
     }
 
     for (int j = 0; j < num_class; j++)
     {
         confid[j] = m[j] / sum_m;
+        //cout << confid[j] << " " ;
     }
+    //cout << endl;
     delete[] m;
 }
 
@@ -282,7 +282,7 @@ void confidence(int num_class, int lineNumber, int columnNumber, double* class_a
 void Rules(double* x, int** rules_gen, int* class_rule, double* confid_rules, int col, int num_rules, int** best_rule_for_object, double** reply, int y, int j)
 {
     double max = 0;
-    int number_rule_best = 0;
+    int number_rule_best = -1;
     int checki = 0;
     for (int p = 0; p < num_rules; p++)
     {
@@ -320,7 +320,11 @@ void Rules(double* x, int** rules_gen, int* class_rule, double* confid_rules, in
     }*/
     best_rule_for_object[y][j] = number_rule_best;
     checki = class_rule[number_rule_best];
-    reply[y][j] = class_rule[number_rule_best];
+    if (number_rule_best == -1)
+    {
+        checki = -1;
+    }
+    reply[y][j] = checki;
 }
 
 //Количество верно классифицированных объектов одним правилом
@@ -343,12 +347,12 @@ void check_fitness_michegan(int* correct_classification_for_object_train, int* b
 }
 
 //подсчет количества активных правил в популяции
-int active_rule_flag(int* active_rules, int number_rules)
+int active_rule_flag(double* active_rules, int number_rules, double better_than)
 {
     int flag = 0;
     for (int l = 0; l < number_rules; l++)
     {
-        if (active_rules[l] == 1)
+        if (active_rules[l] > better_than)
         {
             flag++;
         }
@@ -357,12 +361,12 @@ int active_rule_flag(int* active_rules, int number_rules)
 }
 
 //подсчет кол-ва confid > 0,5
-int confid_rule_flag(double* confid_rules, int number_rules, int better_then)
+int confid_rule_flag(double* confid_rules, int number_rules, double better_than)
 {
     int flag = 0;
     for (int l = 0; l < number_rules; l++)
     {
-        if (confid_rules[l] > better_then)
+        if (confid_rules[l] > better_than)
         {
             flag++;
         }
@@ -371,28 +375,30 @@ int confid_rule_flag(double* confid_rules, int number_rules, int better_then)
 }
 
 //don't care среднее в популяции по правиле
-double dont_care_flag(int number_rules, int columnNumber, int** x)
+double dont_care_flag(int number_rules, int columnNumber, int** x, double* confid_rules, double better_than)
 {
     int flag = 0;
     double average = 0;
     for (int i = 0; i < number_rules; i++)
     {
-        flag = 0;
-        for (int l = 0; l < columnNumber; l++)
+        if (confid_rules[i] > better_than)
         {
-            if (x[i][l] != 0)
+            flag = 0;
+            for (int l = 0; l < columnNumber; l++)
             {
-                flag++;
+                if (x[i][l] != 0)
+                {
+                    flag++;
+                }
             }
+            average = average +  (double)flag;
         }
-        average = average +  (double)flag / (double)columnNumber;
     }
-    average = (double)average / (double)number_rules;
     return average;
 }
 
 //матрица ошибок для n классов
-void error_matrix(int train_length, double* reply_train, double* train_class_answers, double* class_value, int num_class, int* class_values_count_train, int** mfalse)
+void error_matrix(int train_length, double* reply_train, double* train_class_answers, double* class_value, int num_class, int* class_values_count_train, int** mfalse, int didntgetclass)
 {
     //подсчет количества каждого класса в массиве 
     int* class_values_count_reply = new int[num_class]; 
@@ -419,13 +425,20 @@ void error_matrix(int train_length, double* reply_train, double* train_class_ans
         
     for (int i = 0; i < train_length; i++)
     {
-        if (reply_train[i] == train_class_answers[i])
+        if (reply_train[i] == -1)
         {
-            mfalse[(int)reply_train[i]][(int)reply_train[i]] = mfalse[(int)reply_train[i]][(int)reply_train[i]] + 1;
+            didntgetclass = didntgetclass + 1;
         }
-        if (reply_train[i] != train_class_answers[i])
+        else
         {
-            mfalse[(int)train_class_answers[i]][(int)reply_train[i]] = mfalse[(int)train_class_answers[i]][(int)reply_train[i]] + 1;
+            if (reply_train[i] == train_class_answers[i])
+            {
+                mfalse[(int)reply_train[i]][(int)reply_train[i]] = mfalse[(int)reply_train[i]][(int)reply_train[i]] + 1;
+            }
+            if (reply_train[i] != train_class_answers[i])
+            {
+                mfalse[(int)train_class_answers[i]][(int)reply_train[i]] = mfalse[(int)train_class_answers[i]][(int)reply_train[i]] + 1;
+            }
         }
     }
     
@@ -667,16 +680,16 @@ int main () {
     }*/
 //-------------------------------------------ключевые параметры---------------------------------------------------
     //кол-во индивидов
-    int pop_size = 100;//потом спросить у пользователя
+    int pop_size = 50;//потом спросить у пользователя
     //кол-во поколений
-    int gen = 1000;//потом спросить у пользователя
+    int gen = 50;//потом спросить у пользователя
     int max_gen = gen;
     //количество правил
-    int number_rules = 50;
+    int number_rules = 30;
     //турнирная селекция
     int T = 2;
-    int w1 = 100;
-    int w2 = 1;
+    int w1 = 10000;
+    int w2 = 10;
     int w3 = 1;
     int npop = 4;
     //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
@@ -687,7 +700,7 @@ int main () {
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
     int cross_num_const = cross_num;
-    int better_than = 0.6;//параметр для прохождения confidence
+    double better_than = 0.5;//параметр для прохождения confidence
     int which_initial = 2;
     //0 - формирование правила с одного случайного объекта
     //1 - с n случайных объектов
@@ -714,6 +727,8 @@ int main () {
     }
 
     int piece = 10;
+    int didntgetclass = 0;
+    int didntgetclasstest = 0;
 //-----------------------------------------------нормировка------------------------------------------------------
     double** data = new double*[lineNumber];
     for (int i = 0; i < lineNumber; i++)
@@ -802,7 +817,7 @@ int main () {
             which_selection = 1;
             //for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
-                which_crossover = 1;
+                which_crossover = 0;
                 //for (int mutation_int = 0; mutation_int < 3; mutation_int++)
                 {
                     which_mutation = 1;
@@ -1157,7 +1172,13 @@ int main () {
                         in_rule[j] = 0;
                     }
                     //случайный объект из выборки
+                    int random_class = -1;
+                    random_class = rand() % num_class;
                     int random_obj = rand() % train_length;
+                    while (train_class_answers[random_obj] != random_class)
+                    {
+                        random_obj = rand() % train_length;
+                    }
                     int* obj_for_rule = new int[1];
                     num_obj_create_rule = 1;
                     obj_for_rule[0] = random_obj;
@@ -1174,7 +1195,7 @@ int main () {
                         in_confid[j] = 0;
                     }
                     
-                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
                     /*
                     for (int j = 0; j < num_class; j++)
                     {
@@ -1239,7 +1260,7 @@ int main () {
                                 in_rule[j] = 0;
                             }
                             //случайный объект из выборки
-                            int random_obj = rand() % lineNumber;
+                            int random_obj = rand() % train_length;
                             int* obj_for_rule = new int[1];
                             num_obj_create_rule = 1;
                             obj_for_rule[0] = random_obj;
@@ -1251,7 +1272,7 @@ int main () {
                                 in_confid[j] = 0;
                             }
 
-                            confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                            confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
 
                             /*for (int j = 0; j < num_class; j++)
                             {
@@ -1372,7 +1393,7 @@ int main () {
                         in_confid[j] = 0;
                     }
                     
-                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
                     /*
                     for (int j = 0; j < num_class; j++)
                     {
@@ -1437,7 +1458,7 @@ int main () {
                                 in_rule[j] = 0;
                             }
                             //случайный объект из выборки
-                            int random_obj = rand() % lineNumber;
+                            int random_obj = rand() % train_length;
                             int* obj_for_rule = new int[num_obj_create_rule];
                             for (int j = 0; j < num_obj_create_rule; j++)
                             {
@@ -1451,7 +1472,7 @@ int main () {
                                 in_confid[j] = 0;
                             }
 
-                            confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                            confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
 
                             /*for (int j = 0; j < num_class; j++)
                             {
@@ -1559,10 +1580,16 @@ int main () {
                     {
                         in_rule[j] = 0;
                     }
-                    //случайный объект из выборки
-                    int random_obj = rand() % train_length;
+                    int random_class = -1;
+                    random_class = rand() % num_class;
                     //массив с num_random случайными объектами из выборки одного класса
                     random_object[0] = rand() % train_length;
+                    while (train_class_answers[random_object[0]] != random_class)
+                    {
+                        random_object[0] = rand() % train_length;
+                    }
+                    //случайный объект из выборки
+                    int random_obj = 0;
                     int answer_class_check = train_class_answers[random_object[0]];
                     int count = 1;
                     for (int ran = 1; ran < num_random; ran++)
@@ -1687,7 +1714,7 @@ int main () {
                         in_confid[j] = 0;
                     }
                     
-                    confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                    confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
                     
                     /*cout << endl << " Следующее " << endl;
                     for (int j = 0; j < num_class; j++)
@@ -1762,7 +1789,7 @@ int main () {
                                 in_rule[j] = 0;
                             }
                             //случайный объект из выборки
-                            int random_obj = rand() % lineNumber;
+                            int random_obj = rand() % train_length;
                             int* obj_for_rule = new int[num_obj_create_rule];
                             for (int j = 0; j < num_obj_create_rule; j++)
                             {
@@ -1776,7 +1803,7 @@ int main () {
                                 in_confid[j] = 0;
                             }
 
-                            confidence(num_class, lineNumber, columnNumber, class_answers, data, in_rule, in_confid);
+                            confidence(num_class, train_length, columnNumber, class_answers, data, in_rule, in_confid);
 
                             /*for (int j = 0; j < num_class; j++)
                             {
@@ -1870,243 +1897,253 @@ int main () {
             best_active_rule_base[j] = 0;
         } 
 
-        double best_fitness = lineNumber;
+        double best_fitness = -1;
         double best_percentage = lineNumber;
-        //Старт 
-        for (int generation = 0; generation < gen; generation++)
+
+        //cout << "Generation " << generation << endl;
+        double** reply_train = new double*[pop_size];
+        for (int j = 0; j < pop_size; j++)
         {
-            //cout << "Generation " << generation << endl;
-            double** reply_train = new double*[pop_size];
-            for (int j = 0; j < pop_size; j++)
+            reply_train[j] = new double[train_length];
+        }
+
+        double** reply_test = new double*[pop_size];
+        for (int j = 0; j < pop_size; j++)
+        {
+            reply_test[j] = new double[test_length];
+        }
+
+        //Обнуление
+        for (int j = 0; j < pop_size; j++)
+        {
+            for (int l = 0; l < train_length; l++)
             {
-                reply_train[j] = new double[train_length];
+                reply_train[j][l] = 0;
+            }
+            for (int l = 0; l < test_length; l++)
+            {
+                reply_test[j][l] = 0;
+            }
+        }
+
+        double* rank = new double[pop_size];
+        for (int j = 0; j < pop_size; j++)
+        {
+            rank[j] = j + 1;
+        }
+
+        double error_percentage_train = 0;
+        double error_percentage_test = 0;
+        int best_index = 0;
+        //отправить на проверку обучающую выборку
+        for (int y = 0; y < pop_size; y++)
+        {
+            for (int j = 0; j < train_length; j++)
+            {
+                reply_train[y][j] = 0;
             }
 
-            double** reply_test = new double*[pop_size];
-            for (int j = 0; j < pop_size; j++)
+            for (int j = 0; j < train_length; j++)
             {
-                reply_test[j] = new double[test_length];
+                Rules(train_data[j], pop[y], class_rules[0][y], confid_rules[0][y], columnNumber, number_rules, best_rule_for_object_train, reply_train, y, j);//отправка обучающей выборки
+            }
+
+            /*for (int j = 0; j < train_length; j++)
+            {
+                cout << reply_train[y][j] << endl;
+            }*/
+
+            didntgetclass = 0;
+
+            int train_error = 0;
+            for (int l = 0; l < train_length; l++)
+            {
+                if (reply_train[y][l] == -1)
+                {
+                    didntgetclass++;
+                }
+                if (reply_train[y][l] != train_class_answers[l])
+                {
+                    train_error = train_error + 1;//неправильно классифицированный объекты
+                    correct_classification_for_object_train[y][l] = 0;//неправильно классифицированный объект
+                }
+                else
+                {
+                    correct_classification_for_object_train[y][l] = 1;//правильно классифицированный объект
+                }
+            }
+            //количество правильно классиф. объектов для каждого правила
+            check_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), correct_classification_num); 
+            
+            for (int j = 0; j < number_rules; j++)
+            {
+                if (confid_rules[0][y][j] < better_than)
+                {
+                    active_rules[0][y][j] = 0;
+                    class_rules[0][y][j] = 0;
+                    confid_rules[0][y][j] = 0;
+                    weight_rules[0][y][j] = 0;
+                }
+
+                if (correct_classification_num[y][j] == 0)
+                {
+                    active_rules[0][y][j] = 0;
+                    class_rules[0][y][j] = 0;
+                    confid_rules[0][y][j] = 0;
+                    weight_rules[0][y][j] = 0;
+                }
+            }
+            
+            int flag_active = 0;
+            flag_active = active_rule_flag(confid_rules[0][y], number_rules, better_than);
+
+            double flag_not_dontcare = 0;
+            flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop[y], confid_rules[0][y], better_than);
+            
+            //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
+
+            int** mfalse = new int* [num_class]; 
+            for (int j = 0; j < num_class; j++)
+            {
+                mfalse[j] = new int[num_class];
             }
 
             //Обнуление
-            for (int j = 0; j < pop_size; j++)
+            for (int j = 0; j < num_class; j++)
             {
-                for (int l = 0; l < train_length; l++)
+                for (int l = 0; l < num_class; l++)
                 {
-                    reply_train[j][l] = 0;
-                }
-                for (int l = 0; l < test_length; l++)
-                {
-                    reply_test[j][l] = 0;
+                    mfalse[j][l] = 0;
                 }
             }
 
-            double* rank = new double[pop_size];
-            for (int j = 0; j < pop_size; j++)
+            //матрица ошибок для задач с N классами
+            error_matrix(train_length, reply_train[y], train_class_answers, class_value, num_class, class_values_count_train, mfalse, didntgetclass);
+
+            //cout << didntgetclass;
+
+            accuracy = 0;
+            precision = 0;
+            recall = 0;
+            Fscore = 0;
+            numerator = 0;
+            denominator = 0; 
+            b = 1;
+
+            /*for (int j = 0; j < num_class; j++)
             {
-                rank[j] = j + 1;
+                for (int l = 0; l < num_class; l++)
+                {
+                    cout << mfalse[j][l] << " ";
+                }
+                cout << endl;
+            }*/
+
+            for (int j = 0; j < num_class; j++)
+            {
+                int sum_pre = 0;
+                int class_pre = 0;
+                int class_recall = 0;
+                int sum_recall = 0;
+                for (int l = 0; l < num_class; l++)
+                {
+                    if (j == l)
+                    {
+                        numerator = numerator + mfalse[j][l];
+                        class_pre = mfalse[j][l];
+                        class_recall = mfalse[l][j];
+                    }
+                    denominator = denominator + mfalse[j][l];
+
+                    sum_pre = sum_pre + mfalse[j][l];
+                    sum_recall = sum_recall + mfalse[l][j];
+                    
+
+                }
+                if (sum_recall != 0)
+                {
+                    recall = recall + (double)class_recall/(double)sum_recall;
+                }
+                if (sum_pre != 0)
+                {
+                    precision = precision + (double)class_pre/(double)sum_pre;
+                }
+                
             }
+
+            accuracy = (double)numerator/(double)denominator;//для любого кол-ва классов
+            precision = precision/(double)num_class;//для любого кол-ва классов
+            recall = recall/(double)num_class;//для любого кол-ва классов
+            if (precision + recall == 0)
+            {
+                Fscore = 0;
+            }
+            else
+            {
+                Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
+            }
+
+            num_rule_file = flag_active;
+            best_index = y;
+            dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index], confid_rules[0][y], better_than);
+
+            /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
+            cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
+            cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
+            cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором
+            */
             
-            double error_percentage_train = 0;
-            double error_percentage_test = 0;
-            int best_index = 0;
-            //отправить на проверку обучающую выборку
-            for (int y = 0; y < pop_size; y++)
+            for (int j = 0; j < num_class; j++)
             {
-                for (int j = 0; j < train_length; j++)
-                {
-                    reply_train[y][j] = 0;
-                }
-
-                for (int j = 0; j < train_length; j++)
-                {
-                    Rules(train_data[j], pop[y], class_rules[0][y], confid_rules[0][y], columnNumber, number_rules, best_rule_for_object_train, reply_train, y, j);//отправка обучающей выборки
-                }
-
-                /*for (int j = 0; j < train_length; j++)
-                {
-                    cout << reply_train[y][j] << endl;
-                }*/
-
-                int train_error = 0;
-                for (int l = 0; l < train_length; l++)
-                {
-                    if (reply_train[y][l] != train_class_answers[l])
-                    {
-                        train_error = train_error + 1;//неправильно классифицированный объекты
-                        correct_classification_for_object_train[y][l] = 0;//неправильно классифицированный объект
-                    }
-                    else
-                    {
-                        correct_classification_for_object_train[y][l] = 1;//правильно классифицированный объект
-                    }
-                }
-                //количество правильно классиф. объектов для каждого правила
-                check_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), correct_classification_num); 
-                
-                for (int j = 0; j < number_rules; j++)
-                {
-                    if (confid_rules[0][y][j] < better_than)
-                    {
-                        active_rules[0][y][j] = 0;
-                        class_rules[0][y][j] = 0;
-                        confid_rules[0][y][j] = 0;
-                        weight_rules[0][y][j] = 0;
-                    }
-
-                    if (correct_classification_num[y][j] == 0)
-                    {
-                        active_rules[0][y][j] = 0;
-                        class_rules[0][y][j] = 0;
-                        confid_rules[0][y][j] = 0;
-                        weight_rules[0][y][j] = 0;
-                    }
-                }
-              
-                int flag_active = 0;
-                flag_active = active_rule_flag(active_rules[0][y], number_rules);
-
-                double flag_not_dontcare = 0;
-                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop[y]);
-                
-                //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
-
-                error_percentage_train = double(train_error) / double(train_length);
-                //f3 количество не донт care параметров в правиле суммарно по всем правилам 
-                //реализовать NSGA-II
-                fitness_small[y] = error_percentage_train;
-                fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
-                
-                //cout << "Train fitness " << fitness[y] << endl;
-
-                if (error_percentage_train < best_percentage)
-                {
-
-                     for (int l = 0; l < number_rules; l++)
-                    {
-                        for (int j = 0; j < columnNumber; j++)
-                        {
-                            best_rule_base[l][j] = pop[y][l][j];//база правил с наименьшей ошибкой
-                        }
-                        best_confid_rule_base[l] = confid_rules[0][y][l];
-                        best_active_rule_base[l] = active_rules[0][y][l];
-                        best_class_rule_base[l] = class_rules[0][y][l];
-                    }
-
-
-                    //cout << "Train percentage " << error_percentage_train << endl;
-
-                    int** mfalse = new int* [num_class]; 
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        mfalse[j] = new int[num_class];
-                    }
-
-                    //Обнуление
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            mfalse[j][l] = 0;
-                        }
-                    }
-
-                    //матрица ошибок для задач с N классами
-                    error_matrix(train_length, reply_train[y], train_class_answers, class_value, num_class, class_values_count_train, mfalse);
-
-                    accuracy = 0;
-                    precision = 0;
-                    recall = 0;
-                    Fscore = 0;
-                    numerator = 0;
-                    denominator = 0; 
-                    b = 1;
-
-                    /*for (int j = 0; j < num_class; j++)
-                    {
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            cout << mfalse[j][l] << " ";
-                        }
-                        cout << endl;
-                    }*/
-
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        int sum_pre = 0;
-                        int class_pre = 0;
-                        int class_recall = 0;
-                        int sum_recall = 0;
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            if (j == l)
-                            {
-                                numerator = numerator + mfalse[j][l];
-                                class_pre = mfalse[j][l];
-                                class_recall = mfalse[l][j];
-                            }
-                            denominator = denominator + mfalse[j][l];
-
-                            sum_pre = sum_pre + mfalse[j][l];
-                            sum_recall = sum_recall + mfalse[l][j];
-
-                        }
-                        precision = precision + (double)class_pre/(double)sum_pre;
-                        recall = recall + (double)class_recall/(double)sum_recall;
-                    }
-
-                    accuracy = (double)numerator/(double)denominator;//для любого кол-ва классов
-                    precision = precision/(double)num_class;//для любого кол-ва классов
-                    recall = recall/(double)num_class;//для любого кол-ва классов
-                    Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
-
-                    num_rule_file = flag_active;
-                    best_index = y;
-                    dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index]);
-
-                    /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
-                    cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
-                    cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
-                    cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором
-                    */
-                    
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        delete mfalse[j];
-                    }
-                    delete mfalse;
-                }
-                
-                if (fitness[y] <= best_fitness)
-                {
-                    for (int l = 0; l < number_rules; l++)
-                    {
-                        for (int j = 0; j < columnNumber; j++)
-                        {
-                            best_rule_base[l][j] = 0;
-                        }
-                        best_class_rule_base[l] = 0;
-                        best_active_rule_base[l] = 0;
-                        best_confid_rule_base[l] = 0;
-                    }
-
-                    best_fitness = fitness[y];
-                    best_percentage = error_percentage_train;
-                    best_index = y;
-                    
-                    for (int l = 0; l < number_rules; l++)
-                    {
-                        for (int j = 0; j < columnNumber; j++)
-                        {
-                            best_rule_base[l][j] = pop[y][l][j];//база правил с наименьшей ошибкой
-                        }
-                        best_confid_rule_base[l] = confid_rules[0][y][l];
-                        best_active_rule_base[l] = active_rules[0][y][l];
-                        best_class_rule_base[l] = class_rules[0][y][l];
-                    }
-                }          
+                delete mfalse[j];
             }
+            delete mfalse;
 
+            error_percentage_train = double(train_error) / double(train_length);
+            //f3 количество не донт care параметров в правиле суммарно по всем правилам 
+            //реализовать NSGA-II
+            fitness_small[y] = error_percentage_train;
+            fitness[y] = w1*(1 - Fscore) + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
+            
+            //cout << "Train fitness " << fitness[y] << endl;
+
+
+            if (fitness[y] < best_fitness || best_fitness == -1)
+            {
+
+                for (int l = 0; l < number_rules; l++)
+                {
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        best_rule_base[l][j] = pop[y][l][j];//база правил с наименьшей ошибкой
+                    }
+                    best_confid_rule_base[l] = confid_rules[0][y][l];
+                    best_active_rule_base[l] = active_rules[0][y][l];
+                    best_class_rule_base[l] = class_rules[0][y][l];
+                }
+
+                for (int l = 0; l < number_rules; l++)
+                {
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << best_rule_base[l][j] << "\t";
+                    }
+                    cout << best_class_rule_base[l] << " " << best_active_rule_base[l] << " " << best_confid_rule_base[l] << endl;
+                }
+                cout << endl;
+
+                //cout << "Train percentage " << error_percentage_train << endl;
+
+                best_fitness = fitness[y];
+                best_percentage = error_percentage_train;
+                best_index = y;
+
+            }          
+        }
+
+        //Старт 
+        for (int generation = 0; generation < gen; generation++)
+        {
             //селекция              
             if (which_selection == 0)
             {
@@ -2263,8 +2300,8 @@ int main () {
                         k = rand() % pop_size;
                     }
                     int new_num_rules = 0;
-                    int flag_active1 = active_rule_flag(active_rules[1][y], number_rules);
-                    int flag_active2 = active_rule_flag(active_rules[1][k], number_rules);
+                    int flag_active1 = active_rule_flag(confid_rules[1][y], number_rules, better_than);
+                    int flag_active2 = active_rule_flag(confid_rules[1][k], number_rules, better_than);
                     if (flag_active1 + flag_active2 - num_class <= 0)
                     {
                         new_num_rules = flag_active1 + flag_active2;
@@ -2359,7 +2396,7 @@ int main () {
 
                     int start = 0;
                     int count_class_cross = num_class;
-                    int flag_active3 = active_rule_flag(active_rules[2][y], number_rules);
+                    int flag_active3 = active_rule_flag(confid_rules[2][y], number_rules, better_than);
                     //больше ли num_class или нет проверку везде сделать!ВАЖНО
                 } 
             }
@@ -2384,8 +2421,8 @@ int main () {
                         k = rand() % pop_size;
                     }
                     
-                    int flag_active1 = active_rule_flag(active_rules[1][y], number_rules);
-                    int flag_active2 = active_rule_flag(active_rules[1][k], number_rules);
+                    int flag_active1 = active_rule_flag(confid_rules[1][y], number_rules, better_than);
+                    int flag_active2 = active_rule_flag(confid_rules[1][k], number_rules, better_than);
                     
                     int new_num_rules = 0;
 
@@ -2455,7 +2492,7 @@ int main () {
             //терм + сгенерированное число от 1 до 13 и остаток от деления на 14
             for (int y = 0; y < pop_size; y++)
             {
-                int flag_active = active_rule_flag(active_rules[2][y], number_rules);
+                int flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
                 int flag_confid = confid_rule_flag(confid_rules[2][y], number_rules, better_than);
                 double k1 = 0;
                 if (which_mutation == 0)
@@ -2503,7 +2540,7 @@ int main () {
             {
                 checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
                 //так как здесь мы работаем с правилами, то замена только активных с вероятность 50/50 как га, так и эвристикой?
-                int flag_active = active_rule_flag(active_rules[2][y], number_rules);
+                int flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
                 int check_for_zero = 0;
                 if (flag_active == 0)
                 {
@@ -2680,6 +2717,56 @@ int main () {
             int best_index2 = 0;
             for (int y = 0; y < pop_size; y++)
             {
+                /*for (int l = 0; l < number_rules; l++)
+                {
+                    double* in_confid = new double[num_class];
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        in_confid[j] = 0;
+                    }
+                    
+                    confidence(num_class, lineNumber, columnNumber, class_answers, data, pop3[y][l], in_confid);
+                    /*
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        cout << in_confid[j] << " ";
+                    }*/
+
+                    /*cout << endl << " Правило " << endl;
+                    for (int j = 0; j < columnNumber; j++)
+                    {
+                        cout << in_rule[j] << " ";
+                    }*/
+
+                    /*double max_confid = 0;
+                    int c_confid = 0;
+                    for (int j = 0; j < num_class; j++)
+                    {
+                        if (in_confid[j] > max_confid)
+                        {
+                            max_confid = in_confid[j];
+                            c_confid = j;
+                        }
+                    }
+
+                    if (max_confid > better_than)
+                    {
+                        class_rules[2][y][l] = c_confid;
+                        confid_rules[2][y][l] = max_confid;
+                        weight_rules[2][y][l] = 2*max_confid - 1;
+                        active_rules[2][y][l] = 1;
+                    }
+                    else
+                    {
+                        active_rules[2][y][l] = 0;
+                        class_rules[2][y][l] = 0;
+                        confid_rules[2][y][l] = 0;
+                        weight_rules[2][y][l] = 0;
+                    }
+
+                    delete[] in_confid;
+                }*/
+                
                 //Обнуление
                 for (int j = 0; j < train_length; j++)
                 {
@@ -2695,10 +2782,15 @@ int main () {
                 {
                     cout << reply_train[y][j] << endl;
                 }*/
+                didntgetclass = 0;
 
                 int train_error = 0;
                 for (int l = 0; l < train_length; l++)
                 {
+                    if (reply_train[y][l] == -1)
+                    {
+                        didntgetclass++;
+                    }
                     if (reply_train[y][l] != train_class_answers[l])
                     {
                         train_error = train_error + 1;//неправильно классифицированный объекты
@@ -2728,21 +2820,120 @@ int main () {
                         confid_rules[0][y][j] = 0;
                         weight_rules[0][y][j] = 0;
                     }
+
+                    if (correct_classification_num[y][j] == 0)
+                    {
+                        active_rules[0][y][j] = 0;
+                        class_rules[0][y][j] = 0;
+                        confid_rules[0][y][j] = 0;
+                        weight_rules[0][y][j] = 0;
+                    }
                 }
 
                 int flag_active = 0;
-                flag_active = active_rule_flag(active_rules[2][y], number_rules);
+                flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
 
                 double flag_not_dontcare = 0;
-                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop3[y]);
+                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop3[y], confid_rules[0][y], better_than);
                 
                 //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
+
+                int** mfalse = new int* [num_class]; 
+                for (int j = 0; j < num_class; j++)
+                {
+                    mfalse[j] = new int[num_class];
+                }
+
+                //Обнуление
+                for (int j = 0; j < num_class; j++)
+                {
+                    for (int l = 0; l < num_class; l++)
+                    {
+                        mfalse[j][l] = 0;
+                    }
+                }
+
+                //матрица ошибок для задач с N классами
+                error_matrix(train_length, reply_train[y], train_class_answers, class_value, num_class, class_values_count_train, mfalse, didntgetclass);
+
+                accuracy = 0;
+                precision = 0;
+                recall = 0;
+                Fscore = 0;
+                numerator = 0;
+                denominator = 0; 
+                b = 1;
+
+                /*for (int j = 0; j < num_class; j++)
+                {
+                    for (int l = 0; l < num_class; l++)
+                    {
+                        cout << mfalse[j][l] << " ";
+                    }
+                    cout << endl;
+                }*/
+
+                for (int j = 0; j < num_class; j++)
+                {
+                    int sum_pre = 0;
+                    int class_pre = 0;
+                    int class_recall = 0;
+                    int sum_recall = 0;
+                    for (int l = 0; l < num_class; l++)
+                    {
+                        if (j == l)
+                        {
+                            numerator = numerator + mfalse[j][l];
+                            class_pre = mfalse[j][l];
+                            class_recall = mfalse[l][j];
+                        }
+                        denominator = denominator + mfalse[j][l];
+
+                        sum_pre = sum_pre + mfalse[j][l];
+                        sum_recall = sum_recall + mfalse[l][j];
+
+                    }
+                    if (sum_recall != 0)
+                    {
+                        recall = recall + (double)class_recall/(double)sum_recall;
+                    }
+                    if (sum_pre != 0)
+                    {
+                        precision = precision + (double)class_pre/(double)sum_pre;
+                    }
+                }
+
+                accuracy = (double)numerator/(double)denominator;//для любого кол-ва классов
+                precision = precision/(double)num_class;//для любого кол-ва классов
+                recall = recall/(double)num_class;//для любого кол-ва классов
+                if (precision + recall == 0)
+                {
+                    Fscore = 0;
+                }
+                else
+                {
+                    Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
+                }
+                
+                dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index], confid_rules[0][y], better_than);;
+                num_rule_file = flag_active;
+
+                /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
+                cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
+                cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
+                cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором*/
+                
+                for (int j = 0; j < num_class; j++)
+                {
+                    delete mfalse[j];
+                }
+                delete mfalse;
 
                 error_percentage_train = double(train_error) / double(train_length);
                 //f3 количество не донт care параметров в правиле суммарно по всем правилам 
                 //реализовать NSGA-II
                 fitness_small[y] = error_percentage_train;
-                fitness[y] = w1*error_percentage_train + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
+                fitness[y] = w1*(1 - Fscore) + w2*flag_active + w3*flag_not_dontcare;//оптимизировать
                 //cout << "Train percentage " << error_percentage_train << " Правил " << flag_active << " ДОНТ КЭР " << flag_not_dontcare <<  endl;
                 
                 if (fitness[y] < best_fitness)
@@ -2773,110 +2964,29 @@ int main () {
                         best_active_rule_base[l] = active_rules[2][y][l];
                         best_confid_rule_base[l] = confid_rules[2][y][l];
                     }
-                }
-                
-                if (best_percentage > error_percentage_train)
-                {
+
                     for (int l = 0; l < number_rules; l++)
                     {
                         for (int j = 0; j < columnNumber; j++)
                         {
-                            best_rule_base[l][j] = pop3[y][l][j];//база правил с наименьшей ошибкой
+                            cout << best_rule_base[l][j] << "\t";
                         }
-                        best_class_rule_base[l] = class_rules[2][y][l];
-                        best_active_rule_base[l] = active_rules[2][y][l];
-                        best_confid_rule_base[l] = confid_rules[2][y][l];
+                        cout << best_class_rule_base[l] << " " << best_active_rule_base[l] << " " << best_confid_rule_base[l] << endl;
                     }
+                    cout << endl;
 
-                    int** mfalse = new int* [num_class]; 
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        mfalse[j] = new int[num_class];
-                    }
-
-                    //Обнуление
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            mfalse[j][l] = 0;
-                        }
-                    }
-
-                    //матрица ошибок для задач с N классами
-                    error_matrix(train_length, reply_train[y], train_class_answers, class_value, num_class, class_values_count_train, mfalse);
-
-                    accuracy = 0;
-                    precision = 0;
-                    recall = 0;
-                    Fscore = 0;
-                    numerator = 0;
-                    denominator = 0; 
-                    b = 1;
-
-                    /*for (int j = 0; j < num_class; j++)
-                    {
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            cout << mfalse[j][l] << " ";
-                        }
-                        cout << endl;
-                    }*/
-
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        int sum_pre = 0;
-                        int class_pre = 0;
-                        int class_recall = 0;
-                        int sum_recall = 0;
-                        for (int l = 0; l < num_class; l++)
-                        {
-                            if (j == l)
-                            {
-                                numerator = numerator + mfalse[j][l];
-                                class_pre = mfalse[j][l];
-                                class_recall = mfalse[l][j];
-                            }
-                            denominator = denominator + mfalse[j][l];
-
-                            sum_pre = sum_pre + mfalse[j][l];
-                            sum_recall = sum_recall + mfalse[l][j];
-
-                        }
-                        precision = precision + (double)class_pre/(double)sum_pre;
-                        recall = recall + (double)class_recall/(double)sum_recall;
-                    }
-
-                    accuracy = (double)numerator/(double)denominator;//для любого кол-ва классов
-                    precision = precision/(double)num_class;//для любого кол-ва классов
-                    recall = recall/(double)num_class;//для любого кол-ва классов
-                    Fscore = (b * b + 1) * (precision*recall / (b * b* (precision + recall)));//для любого кол-ва классов
-                    
-                    dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index]);;
-                    num_rule_file = flag_active;
-
-                    /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
-                    cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
-                    cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
-                    cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором*/
-                    
-                    for (int j = 0; j < num_class; j++)
-                    {
-                        delete mfalse[j];
-                    }
-                    delete mfalse;
                 }
 
             }
 
             //cout << "test " << error_test << endl;
-            //flag_active_best = active_rule_flag(active_rules[2][best_child], number_rules);
+            //flag_active_best = active_rule_flag(confid_rules[2][best_child], number_rules);
             
             //cout << "Fitness train for all " << best_fitness << " Active rules " << flag_active_best;
             //cout << endl;
 
             //перезапись с лушими
-            for (int l = 0; l < number_rules; l++)
+            /*for (int l = 0; l < number_rules; l++)
             {
                 for (int j = 0; j < columnNumber; j++)
                 {
@@ -2886,8 +2996,8 @@ int main () {
                 class_rules[0][0][l] = class_rules[0][best_index][l];
                 confid_rules[0][0][l] = confid_rules[0][best_index][l];
                 weight_rules[0][0][l] = weight_rules[0][best_index][l];
-            }
-            for (int y = 1; y < pop_size; y++)
+            }*/
+            for (int y = 0; y < pop_size; y++)
             {
                 for (int l = 0; l < number_rules; l++)
                 {
@@ -2912,9 +3022,14 @@ int main () {
                     Rules(test_data[j], best_rule_base, best_class_rule_base, confid_rules[0][best_index], columnNumber, number_rules, best_rule_for_object_test, reply_test, best_index, j);//отправка тестовой выборки
                 }
 
+                didntgetclasstest=0;
                 int error_test = 0;
                 for (int l = 0; l < test_length; l++)
                 {
+                    if (reply_test[best_index][l] == -1)
+                    {
+                        didntgetclasstest++;
+                    }
                     if (reply_test[best_index][l] != test_class_answers[l])
                     {
                         error_test = error_test + 1;//пригодность
@@ -2940,7 +3055,9 @@ int main () {
                 }
 
                 //матрица ошибок для задач с N классами
-                error_matrix(test_length, reply_test[best_index], test_class_answers, class_value, num_class, class_values_count_test, mfalse);
+                error_matrix(test_length, reply_test[best_index], test_class_answers, class_value, num_class, class_values_count_test, mfalse, didntgetclasstest);
+
+                //cout << didntgetclasstest;
 
                 accuracy_test = 0;
                 precision_test = 0;
@@ -2979,14 +3096,27 @@ int main () {
                         sum_recall = sum_recall + mfalse[l][j];
 
                     }
-                    precision_test = precision_test + (double)class_pre/(double)sum_pre;
-                    recall_test = recall_test + (double)class_recall/(double)sum_recall;
+                    if (sum_recall != 0)
+                    {
+                        recall_test = recall_test + (double)class_recall/(double)sum_recall;
+                    }
+                    if (sum_pre != 0)
+                    {
+                        precision_test = precision_test + (double)class_pre/(double)sum_pre;
+                    }
                 }
 
                 accuracy_test = (double)numerator/(double)denominator;//для любого кол-ва классов
                 precision_test = precision_test/(double)num_class;//для любого кол-ва классов
                 recall_test = recall_test/(double)num_class;//для любого кол-ва классов
-                Fscore_test = (b * b + 1) * (precision_test*recall_test / (b * b* (precision_test + recall_test)));//для любого кол-ва классов
+                 if (precision_test + recall_test == 0)
+                {
+                    Fscore_test = 0;
+                }
+                else
+                {
+                    Fscore_test = (b * b + 1) * (precision_test*recall_test / (b * b* (precision_test + recall_test)));//для любого кол-ва классов
+                }
                 
                 /*cout << endl << " Accurancy " << accuracy_test << endl;//Общая точность классификации
                 cout << endl << " Precision " << precision_test << endl;//Согласованность классификации первого класса с данными
@@ -3010,20 +3140,21 @@ int main () {
             
 //-------------------------------------------удаление массивов для generation----------------------------------------------------
 
-            for (int y = 0; y < pop_size; y++)
-            {
-                delete reply_test[y];
-            }
-            delete reply_test;
             
-            for (int y = 0; y < pop_size; y++)
-            {
-                delete reply_train[y];
-            }
-            delete reply_train;
-
-            delete[] rank;
         }
+        for (int y = 0; y < pop_size; y++)
+        {
+            delete reply_test[y];
+        }
+        delete reply_test;
+        
+        for (int y = 0; y < pop_size; y++)
+        {
+            delete reply_train[y];
+        }
+        delete reply_train;
+
+        delete[] rank;
 
         count_average_kfold[0][i] = accuracy;//точность на обучающей
         count_average_kfold[1][i] = precision; 
@@ -3035,6 +3166,14 @@ int main () {
         count_average_kfold[7][i] = precision_test;
         count_average_kfold[8][i] = recall_test;
         count_average_kfold[9][i] = Fscore_test;
+
+        ofstream outpuut10;
+        outpuut10.open(whatfileoutput.c_str(), ios::app);
+
+        outpuut10 << accuracy << " " << precision << " " << recall << " " << Fscore << " " << num_rule_file << " " << dont_care_file << " " << accuracy_test << " " << precision_test << " " << recall_test << " " << Fscore_test << " " << endl; 
+
+        outpuut10.close();
+
 
         ofstream outpuut1;
 
@@ -3065,7 +3204,7 @@ int main () {
         //запись базы правил в файл
         for (int j = 0; j < number_rules; j++)
         {
-            if (best_confid_rule_base[j] > better_than && best_active_rule_base[j] == 1)
+            if (best_confid_rule_base[j] > better_than)
             {
                 for (int l = 0; l < columnNumber; l++)
                 {
