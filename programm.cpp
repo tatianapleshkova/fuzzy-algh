@@ -815,9 +815,9 @@ int main () {
         //for (int selection_int = 0; selection_int < 2; selection_int++)
         {
             which_selection = 1;
-            //for (int crossover_int = 0; crossover_int < 2; crossover_int++)
+            for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
-                which_crossover = 0;
+                which_crossover = crossover_int;
                 //for (int mutation_int = 0; mutation_int < 3; mutation_int++)
                 {
                     which_mutation = 1;
@@ -2939,7 +2939,7 @@ int main () {
                 if (fitness[y] < best_fitness)
                 {
                     num_rule_file = flag_active;
-                    
+
                     for (int l = 0; l < number_rules; l++)
                     {
                         for (int j = 0; j < columnNumber; j++)
