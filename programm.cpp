@@ -2916,7 +2916,7 @@ int main () {
                 }
                 
                 dont_care_file = dont_care_flag(number_rules, columnNumber, pop3[best_index], confid_rules[0][y], better_than);;
-                num_rule_file = flag_active;
+                
 
                 /*cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
                 cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
@@ -2938,6 +2938,8 @@ int main () {
                 
                 if (fitness[y] < best_fitness)
                 {
+                    num_rule_file = flag_active;
+                    
                     for (int l = 0; l < number_rules; l++)
                     {
                         for (int j = 0; j < columnNumber; j++)
