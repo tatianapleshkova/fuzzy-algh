@@ -689,7 +689,7 @@ int main () {
     //турнирная селекция
     int T = 2;
     int w1 = 10000;
-    int w2 = 10;
+    int w2 = 4;
     int w3 = 1;
     int npop = 4;
     //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
@@ -700,7 +700,7 @@ int main () {
     int cross_num = lineNumber / kfold;
     int last_data = lineNumber % kfold;
     int cross_num_const = cross_num;
-    double better_than = 0.5;//параметр для прохождения confidence
+    double better_than = 0.6;//параметр для прохождения confidence
     int which_initial = 2;
     //0 - формирование правила с одного случайного объекта
     //1 - с n случайных объектов
@@ -843,9 +843,14 @@ int main () {
     double* train_class_answers = new double[train_length];
 
     double accuracy = 0;
+    double best_accuracy = 0;
     double precision = 0;
+    double best_precision = 0;
+    //best_presi и все остальное best по train
     double recall = 0;
+    double best_recall = 0;
     double Fscore = 0;
+    double best_Fscore = 0;
     int numerator = 0;
     int denominator = 0; 
     int b = 1;
@@ -2058,7 +2063,6 @@ int main () {
                     sum_pre = sum_pre + mfalse[j][l];
                     sum_recall = sum_recall + mfalse[l][j];
                     
-
                 }
                 if (sum_recall != 0)
                 {
@@ -2717,6 +2721,7 @@ int main () {
             int best_index2 = 0;
             for (int y = 0; y < pop_size; y++)
             {
+                //занулить конфиденс
                 /*for (int l = 0; l < number_rules; l++)
                 {
                     double* in_confid = new double[num_class];
@@ -2872,6 +2877,7 @@ int main () {
                     }
                     cout << endl;
                 }*/
+                //еще один столбик в матрице с неотнесенными объектами //ЕЩЕ МОМЕНТ
 
                 for (int j = 0; j < num_class; j++)
                 {
@@ -2938,6 +2944,10 @@ int main () {
                 
                 if (fitness[y] < best_fitness)
                 {
+                    best_accuracy = accuracy;
+                    best_precision = precision;
+                    best_recall = recall;
+                    best_Fscore = Fscore;
                     num_rule_file = flag_active;
 
                     for (int l = 0; l < number_rules; l++)
@@ -2999,6 +3009,7 @@ int main () {
                 confid_rules[0][0][l] = confid_rules[0][best_index][l];
                 weight_rules[0][0][l] = weight_rules[0][best_index][l];
             }*/
+
             for (int y = 0; y < pop_size; y++)
             {
                 for (int l = 0; l < number_rules; l++)
@@ -3158,7 +3169,7 @@ int main () {
 
         delete[] rank;
 
-        count_average_kfold[0][i] = accuracy;//точность на обучающей
+        count_average_kfold[0][i] = best_accuracy;//точность на обучающей
         count_average_kfold[1][i] = precision; 
         count_average_kfold[2][i] = recall;
         count_average_kfold[3][i] = Fscore;
@@ -3172,7 +3183,7 @@ int main () {
         ofstream outpuut10;
         outpuut10.open(whatfileoutput.c_str(), ios::app);
 
-        outpuut10 << accuracy << " " << precision << " " << recall << " " << Fscore << " " << num_rule_file << " " << dont_care_file << " " << accuracy_test << " " << precision_test << " " << recall_test << " " << Fscore_test << " " << endl; 
+        outpuut10 << best_accuracy << " " << best_precision << " " << best_recall << " " << best_Fscore << " " << num_rule_file << " " << dont_care_file << " " << accuracy_test << " " << precision_test << " " << recall_test << " " << Fscore_test << " " << endl; 
 
         outpuut10.close();
 
