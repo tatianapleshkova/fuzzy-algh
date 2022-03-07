@@ -114,13 +114,13 @@ double term_universal(double x, int current_term)
         current_term = current_term - 9;
     }
 
-    double v1 = current_term / (term - 1.0);
+    double v1 = (double)current_term / ((double)term - 1.0);
 
     if (current_term == term && x > 1)
         return 1;
     else if (current_term == 1 && x < 0)
         return 1;
-    else if (x < (current_term / (term - 1.0)))
+    else if (x < ((double)current_term / ((double)term - 1.0)))
         t = x * (term - 1) - current_term + 2;
     else
         t = -x * (term - 1) + current_term;
@@ -391,7 +391,7 @@ double dont_care_flag(int number_rules, int columnNumber, int** x, double* confi
                     flag++;
                 }
             }
-            average = average +  (double)flag;
+            average = average + (double)flag;
         }
     }
     return average;
@@ -680,7 +680,7 @@ int main () {
     }*/
 //-------------------------------------------ключевые параметры---------------------------------------------------
     //кол-во индивидов
-    int pop_size = 100;//потом спросить у пользователя
+    int pop_size = 25;//потом спросить у пользователя
     //кол-во поколений
     int gen = 1000;//потом спросить у пользователя
     int max_gen = gen;
@@ -689,7 +689,7 @@ int main () {
     //турнирная селекция
     int T = 2;
     int w1 = 10000;
-    int w2 = 1.5;
+    int w2 = 1;
     int w3 = 1;
     int npop = 4;
     //количество рандомных объектов, по которым провести турнирную селекцию для формирования правила
@@ -1151,6 +1151,9 @@ int main () {
             mas_error_classification[j] = new int[num_class];
         }
 //-------------------------------------------начало га-лгоритма----------------------------------------------------
+//сбор данных для каждого индивида после инициалзации, после скрещивания и мутации, после мичиганской части
+//все параметры индивида
+//50 индивидов -> 50 правил и по ним графики лучшее правило, конфиденс, трейн, тест
         //инициализация
         int q_number = 0;
         if (which_initial == 0)
@@ -1240,7 +1243,7 @@ int main () {
                     {
                         for (int y = 0; y < columnNumber; y++)
                         {
-                            pop[ipop][q][y] = 100;
+                            pop[ipop][q][y] = 0;
                         }
                         active_rules[0][ipop][q] = 0;
                         class_rules[0][ipop][q] = 0;
@@ -1312,7 +1315,7 @@ int main () {
                             {
                                 for (int y = 0; y < columnNumber; y++)
                                 {
-                                    pop[ipop][q][y] = 100;
+                                    pop[ipop][q][y] = 0;
                                 }
                                 active_rules[0][ipop][q] = 0;
                                 class_rules[0][ipop][q] = 0;
@@ -1438,7 +1441,7 @@ int main () {
                     {
                         for (int y = 0; y < columnNumber; y++)
                         {
-                            pop[ipop][q][y] = 100;
+                            pop[ipop][q][y] = 0;
                         }
                         active_rules[0][ipop][q] = 0;
                         class_rules[0][ipop][q] = 0;
@@ -1512,7 +1515,7 @@ int main () {
                             {
                                 for (int y = 0; y < columnNumber; y++)
                                 {
-                                    pop[ipop][q][y] = 100;
+                                    pop[ipop][q][y] = 0;
                                 }
                                 active_rules[0][ipop][q] = 0;
                                 class_rules[0][ipop][q] = 0;
@@ -1761,7 +1764,7 @@ int main () {
                     {
                         for (int y = 0; y < columnNumber; y++)
                         {
-                            pop[ipop][q][y] = 100;
+                            pop[ipop][q][y] = 0;
                         }
                         active_rules[0][ipop][q] = 0;
                         class_rules[0][ipop][q] = 0;
@@ -1843,7 +1846,7 @@ int main () {
                             {
                                 for (int y = 0; y < columnNumber; y++)
                                 {
-                                    pop[ipop][q][y] = 100;
+                                    pop[ipop][q][y] = 0;
                                 }
                                 active_rules[0][ipop][q] = 0;
                                 class_rules[0][ipop][q] = 0;
@@ -2502,11 +2505,11 @@ int main () {
                 if (which_mutation == 0)
                 {
                     //переменные / 3 
-                    k1 = 1.0 / double(columnNumber) / double (flag_confid) / 3.0;//слабая
+                    k1 = 1.0 / double(columnNumber) / double(flag_confid) / 3.0;//слабая
                 }
                 else if (which_mutation == 1)
                 {
-                    k1 = 1.0 / double(columnNumber) / double (flag_confid);//средняя 
+                    k1 = 1.0 / double(columnNumber) / double(flag_confid);//средняя 
                     
                 }
                 else 
@@ -2536,12 +2539,12 @@ int main () {
 
             //селекция 
             //пригодность правила - это количество объектов которые это конкретное правило классифицировало
-           
-            int new_number_rules_mich_ga = 0;
-            int new_number_rules_mich_h = 0;
 
             for (int y = 0; y < pop_size; y++)
             {
+                int new_number_rules_mich_ga = 0;
+                int new_number_rules_mich_h = 0;
+
                 checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
                 //так как здесь мы работаем с правилами, то замена только активных с вероятность 50/50 как га, так и эвристикой?
                 int flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
@@ -2551,46 +2554,58 @@ int main () {
                     flag_active = 1;
                     check_for_zero = 1;
                 }
-                int new_rule_mich = flag_active/5 + 2;
+                int new_rule_mich = (float)flag_active/5.0 + 2.0;
 
                 if (new_rule_mich % 2 == 0)     
                 {
-                    new_number_rules_mich_ga =  new_rule_mich/2;
-                    new_number_rules_mich_h =  new_rule_mich/2;
+                    new_number_rules_mich_ga =  new_rule_mich >> 1;
+                    new_number_rules_mich_h =  new_rule_mich >> 1;
                 }
                 else if (new_rule_mich != 1)
                 {
                     double rand_num = xrand(0, 1);
                     if (rand_num <= 0.6)//эвристика
                     {
-                        new_number_rules_mich_h = new_rule_mich/2; 
+                        new_number_rules_mich_h = new_rule_mich >> 1; 
                         new_number_rules_mich_ga = new_rule_mich - new_number_rules_mich_h;
                     }
                     else//га
                     {
-                        new_number_rules_mich_ga = new_rule_mich/2;
+                        new_number_rules_mich_ga = new_rule_mich >> 1;
                         new_number_rules_mich_h = new_rule_mich - new_number_rules_mich_ga;
                     }
                 }
                 else if (new_rule_mich == 1)
                 {
-                    new_number_rules_mich_h = 2;
-                    new_number_rules_mich_ga = 2;
+                    double rand_num = xrand(0, 1);
+                    if (rand_num <= 0.6)//эвристика
+                    {
+                        new_number_rules_mich_h = 1;
+                    }
+                    else//га
+                    {
+                        new_number_rules_mich_ga = 1;
+                    }
                 }      
-                
+                //cout << y << " " << new_number_rules_mich_ga << " " << new_number_rules_mich_h << endl;
                 //селекция                 
                 for (int l = 0; l < new_number_rules_mich_ga; l++)
                 {
+                    selection_index = 0;
+                    randrul = rand() % (number_rules);
+                    while (active_rules[2][y][randrul] == 0)
+                    {
+                        randrul = rand() % (number_rules);
+                    }
+                    selection_index = randrul;
                     for (int u = 0; u < T; u++)
                     {
                         randrul = rand() % (number_rules);
-                        if (check_for_zero == 0)
+                        while (active_rules[2][y][randrul] == 0)
                         {
-                            while (active_rules[2][y][randrul] == 0)
-                            {
-                                randrul = rand() % (number_rules);
-                            }
+                            randrul = rand() % (number_rules);
                         }
+                        
                         if (fitness_michegan[y][randrul] > fitness_michegan[y][selection_index] || u == 0)//корректно классифицировал
                         {
                             selection_index1 = selection_index;
@@ -2598,7 +2613,7 @@ int main () {
                         }
                     }
                     //мутировать с скрещиванием
-                    int mut = 1.0 / columnNumber;
+                    double mut = 1.0 / (double)columnNumber;
                     for (int j = 0; j < columnNumber; j++)
                     {
                         double k = xrand(0, 1);
@@ -2610,7 +2625,7 @@ int main () {
                         {
                             out[y][l][j] = pop3[y][selection_index1][j];
                         }
-                        if (k >= 0 && mut <= k)
+                        if (mut > k)
                         {
                             int k4 = (rand() % (num_term-2)) + 1;
                             //терм + сгенерированное число от 1 до 13 и остаток от деления на 14  
@@ -2636,13 +2651,23 @@ int main () {
                                 {
                                     in_rule[j] = 0;
                                 }
-                                int random_obj = rand() % train_length;
                                 //случайный объект из выборки
                                 int* obj_for_rule = new int[num_obj_create_rule];
                                 obj_for_rule[0] = bad_obj;
                                 for (int j = 1; j < num_obj_create_rule; j++)
                                 {
                                     obj_for_rule[j] = rand() % train_length;
+                                    //генерировать случайную позицию, затем до конца, а потом сначала до первой сгенерированной изменить while (от 0 колва активных правил)
+                                    //обновление конфиденс + если спрошлые 0 или 100!!!!!!!!!!!!!!!!!!!
+                                    //ПЕРЕСМОТРЕТЬ ДЕЛЕНИЕ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                                    for (int jjj = 0; jjj < train_length >> 1; jjj++)
+                                    {
+                                        obj_for_rule[j] = rand() % train_length;
+                                        if (correct_classification_for_object_train[y][obj_for_rule[j]] == 0)
+                                        {
+                                            break;
+                                        }
+                                    }
                                 }
                                 create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
@@ -2677,7 +2702,16 @@ int main () {
                                     confid_rules[2][y][l] = max_confid;
                                     weight_rules[2][y][l] = 2*max_confid - 1;
                                     active_rules[2][y][l] = 1;
+                                    //cout << max_confid << " " << l << " " << new_number_rules_mich_h << endl;
                                 }
+                                else
+                                {
+                                    active_rules[2][y][l] = 0;
+                                    class_rules[2][y][l] = 0;
+                                    confid_rules[2][y][l] = 0;
+                                    weight_rules[2][y][l] = 0;
+                                }
+                                
 
                                 delete[] in_rule;
                                 delete[] in_confid;
@@ -2689,13 +2723,72 @@ int main () {
                             }
                         }
                     }
-                    if (new_number_rules_mich_h == 0)
+                    if (new_number_rules_mich_h <= 0)
                     {
                         break;
                     }
                 }
-                
+
+                int num_ga_rule = 0;
+                for (int l = 0; l < number_rules; l++)
+                {
+                    if (confid_rules[2][y][l] < better_than)
+                    {
+                        if (num_ga_rule > new_number_rules_mich_ga)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            for (int j = 0; j < columnNumber; j++)
+                            {
+                                pop3[y][l][j] = out[y][num_ga_rule][j];
+                            }
+                            double* in_confid = new double[num_class];
+                            for (int j = 0; j < num_class; j++)
+                            {
+                                in_confid[j] = 0;
+                            }
+                            confidence(num_class, lineNumber, columnNumber, class_answers, data, pop3[y][l], in_confid);
+                            double max_confid = 0;
+                            int c_confid = 0;
+                            for (int j = 0; j < num_class; j++)
+                            {
+                                if (in_confid[j] > max_confid)
+                                {
+                                    max_confid = in_confid[j];
+                                    c_confid = j;
+                                }
+                            }
+
+                            if (max_confid > better_than)
+                            {
+                                class_rules[2][y][l] = c_confid;
+                                confid_rules[2][y][l] = max_confid;
+                                weight_rules[2][y][l] = 2*max_confid - 1;
+                                active_rules[2][y][l] = 1;
+                                
+                                //cout << max_confid << " " << l << " " << num_ga_rule << endl;
+                            }
+                            else
+                            {
+                                active_rules[2][y][l] = 0;
+                                class_rules[2][y][l] = 0;
+                                confid_rules[2][y][l] = 0;
+                                weight_rules[2][y][l] = 0;
+                            }
+                            num_ga_rule++;
+
+                            delete[] in_confid;
+                        }
+                    }
+                }
+                //cout << endl;
+                //cout << endl;
+                //cout << endl;
             } 
+            //cout << "---------------------------------" << endl;
+            
 
             /*for (int y = 2; y < pop_size; y++)
             {
@@ -2706,23 +2799,13 @@ int main () {
                 }
             }*/
 
-            for (int y = 0; y < pop_size; y++)
-            {
-                for (int l = 0; l < new_number_rules_mich_ga; l++)
-                {
-                    for (int j = 0; j < columnNumber; j++)
-                    {
-                        pop3[y][l][j] = out[y][l][j];
-                    }
-                }
-            }
 
 //-------------------------------------------проверка----------------------------------------------------
             int best_index2 = 0;
             for (int y = 0; y < pop_size; y++)
             {
                 //занулить конфиденс
-                /*for (int l = 0; l < number_rules; l++)
+                for (int l = 0; l < number_rules; l++)
                 {
                     double* in_confid = new double[num_class];
                     for (int j = 0; j < num_class; j++)
@@ -2743,7 +2826,7 @@ int main () {
                         cout << in_rule[j] << " ";
                     }*/
 
-                    /*double max_confid = 0;
+                    double max_confid = 0;
                     int c_confid = 0;
                     for (int j = 0; j < num_class; j++)
                     {
@@ -2770,7 +2853,7 @@ int main () {
                     }
 
                     delete[] in_confid;
-                }*/
+                }
                 
                 //Обнуление
                 for (int j = 0; j < train_length; j++)
@@ -2818,20 +2901,20 @@ int main () {
                 
                 for (int j = 0; j < number_rules; j++)
                 {
-                    if (confid_rules[0][y][j] < better_than)
+                    if (confid_rules[2][y][j] < better_than)
                     {
-                        active_rules[0][y][j] = 0;
-                        class_rules[0][y][j] = 0;
-                        confid_rules[0][y][j] = 0;
-                        weight_rules[0][y][j] = 0;
+                        active_rules[2][y][j] = 0;
+                        class_rules[2][y][j] = 0;
+                        confid_rules[2][y][j] = 0;
+                        weight_rules[2][y][j] = 0;
                     }
 
                     if (correct_classification_num[y][j] == 0)
                     {
-                        active_rules[0][y][j] = 0;
-                        class_rules[0][y][j] = 0;
-                        confid_rules[0][y][j] = 0;
-                        weight_rules[0][y][j] = 0;
+                        active_rules[2][y][j] = 0;
+                        class_rules[2][y][j] = 0;
+                        confid_rules[2][y][j] = 0;
+                        weight_rules[2][y][j] = 0;
                     }
                 }
 
@@ -2839,7 +2922,7 @@ int main () {
                 flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
 
                 double flag_not_dontcare = 0;
-                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop3[y], confid_rules[0][y], better_than);
+                flag_not_dontcare = dont_care_flag(number_rules, columnNumber, pop3[y], confid_rules[2][y], better_than);
                 
                 //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
 
