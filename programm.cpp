@@ -427,6 +427,7 @@ void error_matrix(int train_length, double* reply_train, double* train_class_ans
     {
         if (reply_train[i] == -1)
         {
+            mfalse[(int)train_class_answers[i]][num_class] = mfalse[(int)train_class_answers[i]][num_class] + 1; 
             didntgetclass = didntgetclass + 1;
         }
         else
@@ -680,7 +681,7 @@ int main () {
     }*/
 //-------------------------------------------ключевые параметры---------------------------------------------------
     //кол-во индивидов
-    int pop_size = 25;//потом спросить у пользователя
+    int pop_size = 100;//потом спросить у пользователя
     //кол-во поколений
     int gen = 1000;//потом спросить у пользователя
     int max_gen = gen;
@@ -814,7 +815,7 @@ int main () {
         which_initial = initialize;
         for (int selection_int = 0; selection_int < 2; selection_int++)
         {
-            which_selection = selection_int;
+            which_selection = 1;
             for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
                 which_crossover = crossover_int;
@@ -1145,10 +1146,10 @@ int main () {
         break;*/
 
         //для вывода матрицы ошибок классификации
-        int** mas_error_classification = new int* [num_class]; 
-        for (int j = 0; j < num_class; j++)
+        int** mas_error_classification = new int* [num_class+1]; 
+        for (int j = 0; j < num_class+1; j++)
         {
-            mas_error_classification[j] = new int[num_class];
+            mas_error_classification[j] = new int[num_class+1];
         }
 //-------------------------------------------начало га-лгоритма----------------------------------------------------
 //сбор данных для каждого индивида после инициалзации, после скрещивания и мутации, после мичиганской части
@@ -2010,16 +2011,16 @@ int main () {
             
             //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
 
-            int** mfalse = new int* [num_class]; 
-            for (int j = 0; j < num_class; j++)
+            int** mfalse = new int* [num_class+1]; 
+            for (int j = 0; j < num_class+1; j++)
             {
-                mfalse[j] = new int[num_class];
+                mfalse[j] = new int[num_class+1];
             }
 
             //Обнуление
-            for (int j = 0; j < num_class; j++)
+            for (int j = 0; j < num_class+1; j++)
             {
-                for (int l = 0; l < num_class; l++)
+                for (int l = 0; l < num_class+1; l++)
                 {
                     mfalse[j][l] = 0;
                 }
@@ -2075,7 +2076,6 @@ int main () {
                 {
                     precision = precision + (double)class_pre/(double)sum_pre;
                 }
-                
             }
 
             accuracy = (double)numerator/(double)denominator;//для любого кол-ва классов
@@ -2100,7 +2100,7 @@ int main () {
             cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором
             */
             
-            for (int j = 0; j < num_class; j++)
+            for (int j = 0; j < num_class+1; j++)
             {
                 delete mfalse[j];
             }
@@ -2658,8 +2658,6 @@ int main () {
                                 {
                                     obj_for_rule[j] = rand() % train_length;
                                     //генерировать случайную позицию, затем до конца, а потом сначала до первой сгенерированной изменить while (от 0 колва активных правил)
-                                    //обновление конфиденс + если спрошлые 0 или 100!!!!!!!!!!!!!!!!!!!
-                                    //ПЕРЕСМОТРЕТЬ ДЕЛЕНИЕ!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                                     for (int jjj = 0; jjj < train_length >> 1; jjj++)
                                     {
                                         obj_for_rule[j] = rand() % train_length;
@@ -2926,16 +2924,16 @@ int main () {
                 
                 //cout << "train error " << train_error << " out of " << train_length << " with " << flag_active << endl;
 
-                int** mfalse = new int* [num_class]; 
-                for (int j = 0; j < num_class; j++)
+                int** mfalse = new int* [num_class+1]; 
+                for (int j = 0; j < num_class+1; j++)
                 {
-                    mfalse[j] = new int[num_class];
+                    mfalse[j] = new int[num_class+1];
                 }
 
                 //Обнуление
-                for (int j = 0; j < num_class; j++)
+                for (int j = 0; j < num_class+1; j++)
                 {
-                    for (int l = 0; l < num_class; l++)
+                    for (int l = 0; l < num_class+1; l++)
                     {
                         mfalse[j][l] = 0;
                     }
@@ -2952,9 +2950,9 @@ int main () {
                 denominator = 0; 
                 b = 1;
 
-                /*for (int j = 0; j < num_class; j++)
+                /*for (int j = 0; j < num_class+1; j++)
                 {
-                    for (int l = 0; l < num_class; l++)
+                    for (int l = 0; l < num_class+1; l++)
                     {
                         cout << mfalse[j][l] << " ";
                     }
@@ -3012,7 +3010,7 @@ int main () {
                 cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
                 cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором*/
                 
-                for (int j = 0; j < num_class; j++)
+                for (int j = 0; j < num_class+1; j++)
                 {
                     delete mfalse[j];
                 }
@@ -3109,8 +3107,8 @@ int main () {
                 }
             }     
 
-            //if (generation > (gen - 2))
-            //{
+            if (generation > (gen - 2))
+            {
 
                 //вывести в файл бп лучшую
                 for (int j = 0; j < test_length; j++)
@@ -3135,16 +3133,16 @@ int main () {
                 
                 //cout << "Error test % " << error_percentage_test;
                 
-                int** mfalse = new int* [num_class]; 
-                for (int j = 0; j < num_class; j++)
+                int** mfalse = new int* [num_class+1]; 
+                for (int j = 0; j < num_class+1; j++)
                 {
-                    mfalse[j] = new int[num_class];
+                    mfalse[j] = new int[num_class+1];
                 }
 
                 //Обнуление
-                for (int j = 0; j < num_class; j++)
+                for (int j = 0; j < num_class+1; j++)
                 {
-                    for (int l = 0; l < num_class; l++)
+                    for (int l = 0; l < num_class+1; l++)
                     {
                         mfalse[j][l] = 0;
                     }
@@ -3163,9 +3161,9 @@ int main () {
                 denominator = 0; 
                 b = 1;
 
-                /*for (int j = 0; j < num_class; j++)
+                /*for (int j = 0; j < num_class+1; j++)
                 {
-                    for (int l = 0; l < num_class; l++)
+                    for (int l = 0; l < num_class+1; l++)
                     {
                         cout << mfalse[j][l] << " ";
                     }
@@ -3219,24 +3217,23 @@ int main () {
                 cout << endl << " Recall (Sensitivity) " << recall_test << endl;//Эффективность классификатора по выделению первого класса
                 cout << endl << " Fscore " << Fscore_test << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором*/
                 
-                for (int j = 0; j < num_class; j++)
+                for (int j = 0; j < num_class+1; j++)
                 {
-                    for (int j1 = 0; j1 < num_class; j1++)
+                    for (int j1 = 0; j1 < num_class+1; j1++)
                     {
                         mas_error_classification[j][j1] = mfalse[j][j1];
                     }
                 }
 
-                for (int j = 0; j < num_class; j++)
+                for (int j = 0; j < num_class+1; j++)
                 {
                     delete mfalse[j];
                 }
                 delete mfalse;
-            //}
+            }
             
 //-------------------------------------------удаление массивов для generation----------------------------------------------------
 
-            
         }
         for (int y = 0; y < pop_size; y++)
         {
@@ -3279,9 +3276,9 @@ int main () {
         outpuut1.open(whatfileoutputmatrix.c_str(), ios::app);
         outpuut1 << i << endl;
         //запись матрицы в файл
-        for (int j = 0; j < num_class; j++)
+        for (int j = 0; j < num_class+1; j++)
         {
-            for (int j1 = 0; j1 < num_class; j1++)
+            for (int j1 = 0; j1 < num_class+1; j1++)
             {
                 outpuut1 << mas_error_classification[j][j1] << " ";
             }
@@ -3390,7 +3387,7 @@ int main () {
         delete[] class_rules;
         delete[] rules_update;
 
-        for (int j = 0; j < num_class; j++)
+        for (int j = 0; j < num_class+1; j++)
         {
             delete mas_error_classification[j];
         }
