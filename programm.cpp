@@ -3009,7 +3009,7 @@ int main () {
                 cout << endl << " Accurancy " << accuracy << endl;//Общая точность классификации
                 cout << endl << " Precision " << precision << endl;//Согласованность классификации первого класса с данными
                 cout << endl << " Recall (Sensitivity) " << recall << endl;//Эффективность классификатора по выделению первого класса
-                cout << endl << " Fscore " << Fscore << endl;//Отношение между объектами первого класса в данных и предсказанными классификатором
+                GitHub
                 */
 
                 for (int j = 0; j < num_class+1; j++)
