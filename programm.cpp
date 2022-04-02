@@ -721,7 +721,9 @@ int main () {
     //закомментировать
     string whatfileoutput;
     //whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
-
+    //в с++ system (exe + excel с настройкой)
+    //написать код для обработки питон в jupytere
+    //многокритериальная оптимизация
     double** count_average_kfold = new double*[10];
     for (int i = 0; i < 10; i++)
     {
@@ -814,15 +816,15 @@ int main () {
     for (int initialize = 0; initialize < 3; initialize++)
     {
         which_initial = initialize;
-        for (int selection_int = 0; selection_int < 2; selection_int++)
+        //for (int selection_int = 0; selection_int < 2; selection_int++)
         {
             which_selection = 1;
             for (int crossover_int = 0; crossover_int < 2; crossover_int++)
             {
                 which_crossover = crossover_int;
-                for (int mutation_int = 0; mutation_int < 3; mutation_int++)
+                //for (int mutation_int = 0; mutation_int < 3; mutation_int++)
                 {
-                    which_mutation = mutation_int;
+                    which_mutation = 1;
 
                     string whatfileoutput;
                     whatfileoutput = to_string(which_initial) + to_string(which_selection) + to_string(which_crossover) + to_string(which_mutation) + ".txt";
@@ -1083,6 +1085,11 @@ int main () {
         int* class_values_count_train = new int[num_class];
         int* class_values_count_test = new int[num_class];
 
+        //rule вынесен
+        int* in_rule = new int[columnNumber];
+        //inconf вынесен
+        double* in_confid = new double[num_class];
+
         //обнуление
         for (int j = 0; j < num_class; j++)
         {
@@ -1176,7 +1183,6 @@ int main () {
                 int flag = 0;
                 for (int q = 0; q < q_number; q++)
                 {
-                    int* in_rule = new int[columnNumber];
                     for (int j = 0; j < columnNumber; j++)
                     {
                         in_rule[j] = 0;
@@ -1199,7 +1205,6 @@ int main () {
                         cout << rule[j] << " ";
                     }*/
 
-                    double* in_confid = new double[num_class];
                     for (int j = 0; j < num_class; j++)
                     {
                         in_confid[j] = 0;
@@ -1253,8 +1258,6 @@ int main () {
                         weight_rules[0][ipop][q] = 0;
                     }
 
-                    delete[] in_rule;
-                    delete[] in_confid;
                     delete[] obj_for_rule;
                 }
                 if (flag < num_class)
@@ -1264,7 +1267,6 @@ int main () {
                         if (active_rules[0][ipop][q] == 0)
                         {
                             //заменяем его на то, которое подходит
-                            int* in_rule = new int[columnNumber];
                             for (int j = 0; j < columnNumber; j++)
                             {
                                 in_rule[j] = 0;
@@ -1276,7 +1278,6 @@ int main () {
                             obj_for_rule[0] = random_obj;
                             create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                            double* in_confid = new double[num_class];
                             for (int j = 0; j < num_class; j++)
                             {
                                 in_confid[j] = 0;
@@ -1324,8 +1325,6 @@ int main () {
                                 confid_rules[0][ipop][q] = 0;
                                 weight_rules[0][ipop][q] = 0;
                             }
-                            delete[] in_confid;
-                            delete[] in_rule;
                             delete[] obj_for_rule;
                         }
                         if (flag > num_class)
@@ -1379,7 +1378,6 @@ int main () {
                 int flag = 0;
                 for (int q = 0; q < q_number; q++)
                 {
-                    int* in_rule = new int[columnNumber];
                     for (int j = 0; j < columnNumber; j++)
                     {
                         in_rule[j] = 0;
@@ -1397,7 +1395,6 @@ int main () {
                         cout << rule[j] << " ";
                     }*/
 
-                    double* in_confid = new double[num_class];
                     for (int j = 0; j < num_class; j++)
                     {
                         in_confid[j] = 0;
@@ -1451,8 +1448,6 @@ int main () {
                         weight_rules[0][ipop][q] = 0;
                     }
 
-                    delete[] in_rule;
-                    delete[] in_confid;
                     delete[] obj_for_rule;
                 }
                 if (flag < num_class)
@@ -1462,7 +1457,6 @@ int main () {
                         if (active_rules[0][ipop][q] == 0)
                         {
                             //заменяем его на то, которое подходит
-                            int* in_rule = new int[columnNumber];
                             for (int j = 0; j < columnNumber; j++)
                             {
                                 in_rule[j] = 0;
@@ -1476,7 +1470,6 @@ int main () {
                             }
                             create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                            double* in_confid = new double[num_class];
                             for (int j = 0; j < num_class; j++)
                             {
                                 in_confid[j] = 0;
@@ -1524,8 +1517,6 @@ int main () {
                                 confid_rules[0][ipop][q] = 0;
                                 weight_rules[0][ipop][q] = 0;
                             }
-                            delete[] in_confid;
-                            delete[] in_rule;
                             delete[] obj_for_rule;
                         }
                         if (flag > num_class)
@@ -1718,7 +1709,6 @@ int main () {
                     create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
                     //теперь нужно понять насколько хорошо правило, если норм - то оставляем
-                    double* in_confid = new double[num_class];
                     for (int j = 0; j < num_class; j++)
                     {
                         in_confid[j] = 0;
@@ -1774,9 +1764,6 @@ int main () {
                         weight_rules[0][ipop][q] = 0;
                     }
 
-                    delete[] in_rule;
-                    delete[] in_confid;
-
                     for (int j = 0; j < ed_fact; j++)
                     {
                         delete edist[j];
@@ -1793,7 +1780,6 @@ int main () {
                         if (active_rules[0][ipop][q] == 0)
                         {
                             //заменяем его на то, которое подходит
-                            int* in_rule = new int[columnNumber];
                             for (int j = 0; j < columnNumber; j++)
                             {
                                 in_rule[j] = 0;
@@ -1807,7 +1793,6 @@ int main () {
                             }
                             create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                            double* in_confid = new double[num_class];
                             for (int j = 0; j < num_class; j++)
                             {
                                 in_confid[j] = 0;
@@ -1855,8 +1840,6 @@ int main () {
                                 confid_rules[0][ipop][q] = 0;
                                 weight_rules[0][ipop][q] = 0;
                             }
-                            delete[] in_confid;
-                            delete[] in_rule;
                         }
                         if (flag > num_class)
                         {
@@ -2548,7 +2531,7 @@ int main () {
                 int new_number_rules_mich_h = 0;
 
                 checkz_fitness_michegan(correct_classification_for_object_train[y], best_rule_for_object_train[y], y, number_rules, (lineNumber-(cross_num+last_data)), fitness_michegan);
-                //так как здесь мы работаем с правилами, то замена только активных с вероятность 50/50 как га, так и эвристикой?
+                //так как здесь мы работаем с правилами, то замена только активных с вероятность 50/50 как га, так и эвристикой
                 int flag_active = active_rule_flag(confid_rules[2][y], number_rules, better_than);
                 int check_for_zero = 0;
                 if (flag_active == 0)
@@ -2648,7 +2631,6 @@ int main () {
                             if (correct_classification_for_object_train[y][linenum] == 0)
                             {
                                 bad_obj = linenum;
-                                int* in_rule = new int[columnNumber];
                                 for (int j = 0; j < columnNumber; j++)
                                 {
                                     in_rule[j] = 0;
@@ -2671,7 +2653,6 @@ int main () {
                                 }
                                 create_rule(num_term, columnNumber, train_data, in_rule, obj_for_rule, num_obj_create_rule);
 
-                                double* in_confid = new double[num_class];
                                 for (int j = 0; j < num_class; j++)
                                 {
                                     in_confid[j] = 0;
@@ -2712,9 +2693,6 @@ int main () {
                                     weight_rules[2][y][l] = 0;
                                 }
                                 
-
-                                delete[] in_rule;
-                                delete[] in_confid;
                                 delete[] obj_for_rule;
                                 if (check == 1)
                                 {
@@ -2744,7 +2722,6 @@ int main () {
                             {
                                 pop3[y][l][j] = out[y][num_ga_rule][j];
                             }
-                            double* in_confid = new double[num_class];
                             for (int j = 0; j < num_class; j++)
                             {
                                 in_confid[j] = 0;
@@ -2778,8 +2755,6 @@ int main () {
                                 weight_rules[2][y][l] = 0;
                             }
                             num_ga_rule++;
-
-                            delete[] in_confid;
                         }
                     }
                 }
@@ -2807,7 +2782,6 @@ int main () {
                 //занулить конфиденс
                 for (int l = 0; l < number_rules; l++)
                 {
-                    double* in_confid = new double[num_class];
                     for (int j = 0; j < num_class; j++)
                     {
                         in_confid[j] = 0;
@@ -2851,8 +2825,6 @@ int main () {
                         confid_rules[2][y][l] = 0;
                         weight_rules[2][y][l] = 0;
                     }
-
-                    delete[] in_confid;
                 }
                 
                 //Обнуление
@@ -3271,7 +3243,6 @@ int main () {
 
         outpuut10.close();
 
-
         ofstream outpuut1;
 
         string whatfileoutputmatrix;
@@ -3311,7 +3282,6 @@ int main () {
                 outpuut2 << endl;
             }
         }
-        
         outpuut2.close();
         
 //-------------------------------------------удаление массивов для kfold----------------------------------------------------
@@ -3353,6 +3323,7 @@ int main () {
 
         delete[] class_values_count_train;
         delete[] class_values_count_test;
+        delete[] in_rule;
         delete[] fitness;
         delete[] fitness_small;
         delete[] fitness_rang;
